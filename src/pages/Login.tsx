@@ -9,12 +9,14 @@ import Container from "@mui/material/Container";
 import { useAuth } from "../hooks/useAuth";
 import { Alert, Snackbar } from "@mui/material";
 import { postLogin } from "../utils/api";
+import { AxiosError } from "axios";
+import ResultSnackbar, { Result } from "../components/ResultSnackbar";
 
 
 export const LoginPage = () => {
     const { login, logout } = useAuth();
     const [open, setOpen] = useState(false);
-    const [loginResult, setLoginResult] = useState({ result: false, text: '' });
+    const [loginResult, setLoginResult] = useState<Result>({ status: false, text: '' });
     useEffect(() => {
         logout();
     }, [])
@@ -26,31 +28,26 @@ export const LoginPage = () => {
         const password = data.get("password")?.toString();
         if (email?.length != 0 && password?.length != 0) {
             await postLogin(email, password).then((res) => {
-                console.log(res.data);
                 if (res.data.hasExceptionError && res.data.exceptionMessage != null) {
-                    setLoginResult({ result: false, text: res.data.exceptionMessage });
+                    setLoginResult({ status: false, text: res.data.exceptionMessage });
                 }
                 else {
-                    setLoginResult({ result: true, text: "Giriş Başarılı" });
+                    setLoginResult({ status: true, text: "Giriş Başarılı" });
                     setTimeout(() => {
                         login(res.data.entity);
                     }, 2000);
                 }
-            }).catch((er) => {
-                console.log(er)
+            }).catch((er: AxiosError) => {
+
+                setLoginResult({ status: false, text: er.message });
             })
         }
-        else{
-            setLoginResult({ result: false, text: "Lütfen tüm alanları doldurunuz" });
+        else {
+            setLoginResult({ status: false, text: "Lütfen tüm alanları doldurunuz" });
         }
         setOpen(true);
     };
-    const handleClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-        setOpen(false);
-    };
+
     return (
         <Container component="main" maxWidth="xs">
             <Box
@@ -61,13 +58,8 @@ export const LoginPage = () => {
                     alignItems: "center"
                 }}
             >
-                <Snackbar
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-                    open={open} autoHideDuration={2000} onClose={handleClose}>
-                    <Alert onClose={handleClose} severity={loginResult.result ? "success" : "warning"} sx={{ width: '100%' }}>
-                        {loginResult.text}
-                    </Alert>
-                </Snackbar>
+                <ResultSnackbar result={loginResult} open={open} closeOpen={() => setOpen(false)} />
+
                 <Avatar sx={{ m: 1, bgcolor: "primary.main" }}>
                     <LockOutlinedIcon />
                 </Avatar>

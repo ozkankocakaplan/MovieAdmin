@@ -1,6 +1,6 @@
 export default interface ServiceResponse<T> {
     hasExceptionError: boolean,
-    exceptionMessage: null,
+    exceptionMessage: string,
     list: Array<T>,
     entity: T,
     count: number,

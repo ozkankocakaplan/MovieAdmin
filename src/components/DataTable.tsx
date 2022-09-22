@@ -6,7 +6,6 @@ import { alpha } from '@mui/material/styles';
 
 import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
@@ -19,24 +18,50 @@ import Paper from '@mui/material/Paper';
 import Checkbox from '@mui/material/Checkbox';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { getComparator, HeadCell, Order, stableSort } from './TableHelper';
+
+import { HeadCell, Order } from './TableHelper';
 
 interface EnhancedTableProps<T> {
     numSelected: number;
-    onRequestSort: (event: React.MouseEvent<unknown>, property: keyof T) => void;
+    onRequestSort: (event: React.MouseEvent<unknown>, property: keyof string) => void;
     onSelectAllClick: (event: React.ChangeEvent<HTMLInputElement>) => void;
     order: Order;
     orderBy: string;
     rowCount: number;
     headCells: HeadCell<T>[]
 }
-
+export interface EnhancedTableToolbarProps {
+    numSelected: number;
+    tableName: string,
+    goEditPage: () => void,
+    goAddPage: () => void,
+    handleDelete: () => void
+}
+interface IDataTableProps<T> {
+    order: Order,
+    setOrder: (data: Order) => void,
+    orderBy: string,
+    setOrderBy: (data: any) => void,
+    selected: any,
+    setSelected: (selected: any) => void,
+    page: number,
+    setPage: (data: number) => void,
+    rowsPerPage: number,
+    setRowsPerPage: (data: number) => void,
+    tableName: string,
+    tableBody: any,
+    HeadCell: HeadCell<T>[],
+    rows: Array<string>,
+    goEditPage: () => void,
+    goAddPage: () => void,
+    handleDelete: () => void,
+    EnhancedTableToolbar: any
+}
 const EnhancedTableHead = <T extends object>(props: EnhancedTableProps<T>) => {
     const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } =
         props;
     const createSortHandler =
-        (property: keyof T) => (event: React.MouseEvent<unknown>) => {
+        (property: keyof string) => (event: React.MouseEvent<unknown>) => {
             onRequestSort(event, property);
         };
 
@@ -50,14 +75,14 @@ const EnhancedTableHead = <T extends object>(props: EnhancedTableProps<T>) => {
                         checked={rowCount > 0 && numSelected === rowCount}
                         onChange={onSelectAllClick}
                         inputProps={{
-                            'aria-label': 'select all desserts',
+                            'aria-label': 'select all',
                         }}
                     />
                 </TableCell>
                 {props.headCells.map((headCell) => (
                     <TableCell
                         key={headCell.id.toString()}
-                        align={headCell.numeric ? 'right' : 'left'}
+                        align={headCell.align}
                         padding={headCell.disablePadding ? 'none' : 'normal'}
                         sortDirection={orderBy === headCell.id ? order : false}
                     >
@@ -80,81 +105,11 @@ const EnhancedTableHead = <T extends object>(props: EnhancedTableProps<T>) => {
     );
 }
 
-interface EnhancedTableToolbarProps {
-    numSelected: number;
-}
-const EnhancedTableToolbar = (props: EnhancedTableToolbarProps) => {
-    const { numSelected } = props;
-    return (
-        <Toolbar
-            sx={{
-                pl: { sm: 2 },
-                pr: { xs: 1, sm: 1 },
-                ...(numSelected > 0 && {
-                    bgcolor: (theme) =>
-                        alpha(theme.palette.primary.main, theme.palette.action.activatedOpacity),
-                }),
-            }}
-        >
-            {numSelected > 0 ? (
-                <Typography
-                    sx={{ flex: '1 1 100%' }}
-                    color="inherit"
-                    variant="subtitle1"
-                    component="div"
-                >
-                    {numSelected} selected
-                </Typography>
-            ) : (
-                <Typography
-                    sx={{ flex: '1 1 100%' }}
-                    variant="h6"
-                    id="tableTitle"
-                    component="div"
-                >
-                    Animeler
-                </Typography>
-            )}
-            {numSelected == 0 && <IconButton>
-                <Add />
-            </IconButton>}
-            {numSelected > 0 && (
-                <>
-                    {numSelected == 1 && <Tooltip title="Edit">
-                        <IconButton>
-                            <Edit />
-                        </IconButton>
-                    </Tooltip>}
-                    <Tooltip title="Delete">
-                        <IconButton>
-                            <DeleteIcon />
-                        </IconButton>
-                    </Tooltip>
-                </>
-            )}
-        </Toolbar>
-    );
-};
-interface IDataTableProps<T> {
-    order: Order,
-    setOrder: (data: Order) => void,
-    orderBy: string,
-    setOrderBy: (data: any) => void,
-    selected: any,
-    setSelected: (selected: any) => void,
-    page: number,
-    setPage: (data: number) => void,
-    rowsPerPage: number,
-    setRowsPerPage: (data: number) => void,
-    tableName: string,
-    tableBody: any,
-    HeadCell: HeadCell<T>[],
-    rows: Array<T>
-}
+
 const DataTable = <T extends object>(props: IDataTableProps<T>) => {
     const handleRequestSort = (
         event: React.MouseEvent<unknown>,
-        property: keyof T,
+        property: keyof string,
     ) => {
         const isAsc = props.orderBy === property && props.order === 'asc';
         props.setOrder(isAsc ? 'desc' : 'asc');
@@ -179,17 +134,21 @@ const DataTable = <T extends object>(props: IDataTableProps<T>) => {
         props.setPage(0);
     };
 
-
     return (
-        <Paper sx={{ width: '100%', mb: 2 }}>
-            <EnhancedTableToolbar numSelected={props.selected.length} />
+        <Box sx={{ width: '100%', mb: 2 }}>
+            <props.EnhancedTableToolbar
+                tableName={props.tableName}
+                goAddPage={props.goAddPage}
+                goEditPage={props.goEditPage}
+                handleDelete={props.handleDelete}
+                numSelected={props.selected.length} />
             <TableContainer>
                 <Table
                     sx={{ minWidth: 750 }}
                     aria-labelledby="tableTitle"
                     size={'medium'}
                 >
-                    <EnhancedTableHead
+                    {props.tableBody && <EnhancedTableHead
                         headCells={props.HeadCell}
                         numSelected={props.selected.length}
                         order={props.order}
@@ -197,13 +156,13 @@ const DataTable = <T extends object>(props: IDataTableProps<T>) => {
                         onSelectAllClick={handleSelectAllClick}
                         onRequestSort={handleRequestSort}
                         rowCount={props.rows.length}
-                    />
+                    />}
                     {
                         props.tableBody
                     }
                 </Table>
             </TableContainer>
-            <TablePagination
+            {props.tableBody && <TablePagination
                 rowsPerPageOptions={[5, 10, 25]}
                 component="div"
                 count={props.rows.length}
@@ -211,8 +170,8 @@ const DataTable = <T extends object>(props: IDataTableProps<T>) => {
                 page={props.page}
                 onPageChange={handleChangePage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
-            />
-        </Paper>
+            />}
+        </Box>
     )
 }
 export default DataTable;

@@ -15,7 +15,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 
-import { Home, Settings, PersonPin, People, Movie, Book, ChevronLeft, Menu, Logout } from '@mui/icons-material';
+import { Home, Settings, PersonPin, People, Movie, Book, ChevronLeft, Menu, Logout, Dashboard, SchemaRounded, Feedback } from '@mui/icons-material';
 import { AppBar, Drawer } from "./AppBar";
 import { Button } from "@mui/material";
 import { RoleType } from "../types/Entites";
@@ -25,7 +25,7 @@ const mdTheme = createTheme();
 export const ProtectedLayout = () => {
     const { user } = useAuth();
     const outlet = useOutlet();
-    const [open, setOpen] = React.useState(true);
+    const [open, setOpen] = React.useState(false);
     const toggleDrawer = () => {
         setOpen(!open);
     };
@@ -113,35 +113,47 @@ export const MainListItems = () => {
         <React.Fragment>
             <ListItemButton href="/dashboard">
                 <ListItemIcon>
-                    <Home />
+                    <Dashboard />
                 </ListItemIcon>
                 <ListItemText primary="Gösterge Paneli" />
             </ListItemButton>
-            <ListItemButton>
+            <ListItemButton href="/anime">
                 <ListItemIcon>
                     <Movie />
                 </ListItemIcon>
                 <ListItemText primary="Anime" />
             </ListItemButton>
-            <ListItemButton>
+            <ListItemButton href="/manga">
                 <ListItemIcon>
                     <Book />
                 </ListItemIcon>
                 <ListItemText primary="Manga" />
             </ListItemButton>
-            <ListItemButton>
+            <ListItemButton href="/users">
                 <ListItemIcon>
                     <People />
                 </ListItemIcon>
                 <ListItemText primary="Kullanıcılar" />
             </ListItemButton>
-            <ListItemButton>
+            <ListItemButton href="/rosette">
                 <ListItemIcon>
                     <PersonPin />
                 </ListItemIcon>
                 <ListItemText primary="Rozetler" />
             </ListItemButton>
-            <ListItemButton>
+            <ListItemButton href="/categories">
+                <ListItemIcon>
+                    <SchemaRounded style={{ transform: 'rotate(90deg)' }} />
+                </ListItemIcon>
+                <ListItemText primary="Kategoriler" />
+            </ListItemButton>
+            <ListItemButton href="/complaint">
+                <ListItemIcon>
+                    <Feedback />
+                </ListItemIcon>
+                <ListItemText primary="Şikayetler" />
+            </ListItemButton>
+            <ListItemButton href="/settings">
                 <ListItemIcon>
                     <Settings />
                 </ListItemIcon>

@@ -54,8 +54,8 @@ export enum NotificationType {
 }
 
 export interface Anime extends BaseEntity {
-    img: string | null;
-    animeName: string | null;
+    img: string;
+    animeName: string;
     animeDescription: string;
     malRating: number;
     siteRating: number;
@@ -113,7 +113,7 @@ export interface Announcement extends BaseEntity {
     comingSoonDate: string;
 }
 export interface Categories extends BaseEntity {
-    name: string | null;
+    name: string;
 }
 export interface Comments extends BaseEntity {
     userID: number;
@@ -140,7 +140,9 @@ export interface ContactSubject extends BaseEntity {
 
 export interface ContentComplaint extends BaseEntity {
     userID: number;
+    contentID: number,
     message: string;
+    type: Type,
     complaintType: ComplaintType;
 }
 
@@ -261,14 +263,14 @@ export interface UserRosette extends BaseEntity {
 }
 
 export interface Users extends BaseEntity {
-    image: string | null;
-    nameSurname: string | null;
-    userName: string | null;
-    birthDay: string | null;
-    email: string | null;
-    password: string | null;
-    discover: string | null;
-    gender: string | null;
+    image: string;
+    nameSurname: string;
+    userName: string;
+    birthDay: string;
+    email: string;
+    password: string;
+    discover: string;
+    gender: string;
     isBanned: boolean;
     seoUrl: string;
     roleType: RoleType;
