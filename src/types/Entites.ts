@@ -57,8 +57,7 @@ export interface Anime extends BaseEntity {
     img: string;
     animeName: string;
     animeDescription: string;
-    malRating: number;
-    siteRating: number;
+    malRating: string;
     ageLimit: string;
     seasonCount: number;
     showTime: string;
@@ -70,6 +69,7 @@ export interface Anime extends BaseEntity {
     seoUrl: string;
 }
 export interface AnimeEpisodes extends BaseEntity {
+    animeID: number;
     seasonID: number;
     episodeName: string;
     episodeDescription: string;
@@ -140,9 +140,9 @@ export interface ContactSubject extends BaseEntity {
 
 export interface ContentComplaint extends BaseEntity {
     userID: number;
-    contentID: number,
+    contentID: number;
     message: string;
-    type: Type,
+    type: Type;
     complaintType: ComplaintType;
 }
 
@@ -277,4 +277,31 @@ export interface Users extends BaseEntity {
 }
 export interface UserModel extends Users {
     token: string;
+    userLoginHistory: UserLoginHistory
+}
+export interface CategoryType extends BaseEntity {
+    categoryID: number,
+    contentID: number,
+    type: Type
+}
+export interface RosetteContent extends BaseEntity {
+    contentID: number,
+    rosetteID: number,
+    episodesID: number,
+    type: Type
+}
+export interface RosetteModels {
+    rosette: Rosette;
+    manga: Manga;
+    anime: Anime;
+    animeEpisodes: AnimeEpisodes[];
+    mangaEpisodes: MangaEpisodes[];
+    rosetteContents: RosetteContent[];
+}
+export interface ReportModels {
+    categoriesCount: number;
+    rosetteCount: number;
+    mangaCount: number;
+    animeCount: number;
+    userCount: number;
 }

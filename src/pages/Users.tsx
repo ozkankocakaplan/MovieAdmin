@@ -1,22 +1,25 @@
-import { alpha, Avatar, Box, Checkbox, createTheme, Drawer, Grid, IconButton, Paper, TableBody, TableCell, TableRow, ThemeProvider, Toolbar, Tooltip, Typography } from '@mui/material';
-import { AxiosError } from 'axios';
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router';
-import DataTable, { EnhancedTableToolbarProps } from '../components/DataTable';
 import Loading from '../components/Loading'
+import DataTable, { EnhancedTableToolbarProps } from '../components/DataTable';
+
+import { alpha, Avatar, Box, Button, Checkbox, createTheme, Drawer, FormControl, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ThemeProvider, Toolbar, Tooltip, Typography } from '@mui/material';
+import { AxiosError } from 'axios';
+import { useLocation, useNavigate } from 'react-router';
 import { getComparator, Order, stableSort } from '../components/TableHelper';
-import { RoleType, Users as User } from '../types/Entites';
-import { getPaginatedUsers } from '../utils/api';
+import { RoleType, UserModel, Users as User } from '../types/Entites';
+import { getPaginatedUsers, getUserByID, putIsBanned, putRole } from '../utils/api';
 import { userCells } from '../utils/HeadCells';
 import { Edit, Delete, Block } from '@mui/icons-material';
+import { useAuth } from '../hooks/useAuth';
 
 export default function Users() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [order, setOrder] = React.useState<Order>('asc');
   const [orderBy, setOrderBy] = React.useState<keyof User>('nameSurname');
   const [selected, setSelected] = React.useState<readonly string[]>([]);
   const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [rowsPerPage, setRowsPerPage] = React.useState(100);
   const [serviceResponse, setServiceResponse] = useState<Array<User>>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,15 +27,23 @@ export default function Users() {
   const [selectedUser, setSelectedUser] = useState({} as User);
 
 
+
   useEffect(() => {
     loadUsers();
     return () => {
       setLoading(true);
     }
-  }, [])
+  }, []);
+
   const loadUsers = async () => {
     await getPaginatedUsers(page + 1, rowsPerPage).then((res) => {
-      setServiceResponse(res.data.list);
+      if (user.roleType === RoleType.Admin) {
+        setServiceResponse(res.data.list);
+
+      }
+      if (user.roleType === RoleType.Moderator) {
+        setServiceResponse(res.data.list.filter((item) => item.roleType != RoleType.Admin && item.roleType != RoleType.Moderator))
+      }
     })
       .catch((er: AxiosError) => {
         console.log(er.message);
@@ -120,6 +131,7 @@ export default function Users() {
       </Toolbar>
     );
   };
+
   return (
     <Loading loading={loading}>
       <Grid container sx={{ padding: "10px" }}>
@@ -205,12 +217,43 @@ export default function Users() {
         </Grid>
 
       </Grid>
-      <UserDetails selectedUser={selectedUser} drawerState={userDetails} openDrawer={toggleDrawer} />
+      {userDetails && <UserDetails selectedUser={selectedUser} drawerState={userDetails} openDrawer={toggleDrawer} />}
     </Loading>
   )
 }
 
 const UserDetails = (props: { openDrawer: (status: boolean) => void, drawerState: boolean, selectedUser: User }) => {
+  const [loading, setLoading] = useState(true);
+  const [userModelForm, setUserModelForm] = useState({} as UserModel);
+  const [role, setRole] = useState<RoleType>();
+  const [status, setStatus] = useState<boolean>();
+  useEffect(() => {
+    loadUserInfo();
+  }, [])
+
+  const loadUserInfo = async () => {
+    await getUserByID(props.selectedUser.id)
+      .then((res) => {
+        if (res.data.isSuccessful) {
+          setRole(res.data.entity.roleType);
+          setStatus(res.data.entity.isBanned);
+          setUserModelForm(res.data.entity);
+        }
+      }).catch((er) => {
+
+      });
+    setLoading(false);
+  }
+
+  const saveButon = async () => {
+    if (role !== userModelForm.roleType) {
+      await putRole(role as any);
+    }
+    if (status !== userModelForm.isBanned) {
+      await putIsBanned(userModelForm.id);
+    }
+    window.location.reload();
+  }
   const theme = createTheme({
     typography: {
       subtitle1: {
@@ -221,38 +264,162 @@ const UserDetails = (props: { openDrawer: (status: boolean) => void, drawerState
     }
   });
   return (
-    <ThemeProvider theme={theme}>
-      <React.Fragment>
-        <Drawer
-          sx={{ '& .MuiDrawer-paper': { top: '65px' } }}
-          anchor={'right'}
-          open={props.drawerState}
-          onClose={() => props.openDrawer(false)}
-        >
-          <Box
-            sx={{ width: 650 }}
-            role="presentation"
-          // onClick={() => props.openDrawer(false)}
-          // onKeyDown={() => props.openDrawer(false)}
-          >
-            <Grid container sx={{ margin: '15px' }}>
-              <Grid item sm={12} md={2} xs={12}>
-                <Avatar
-                  alt="Remy Sharp"
-                  src="/static/images/avatar/1.jpg"
-                  sx={{ width: 90, height: 90 }}
-                />
-              </Grid>
-              <Grid item sx={{ justifyContent: 'center', alignItems: 'flex-start', display: 'flex', flex: 1, flexDirection: 'column' }} sm={12} md={10} xs={12}>
-                <Typography variant='subtitle1'>Özkan Kocakaplan</Typography>
-                <Typography variant='subtitle1'>ozkankocakaplan07@gmail.com</Typography>
-                <Typography variant='subtitle1'>Aktif</Typography>
-              </Grid>
-
-            </Grid>
-          </Box>
-        </Drawer>
-      </React.Fragment>
-    </ThemeProvider>
+    <Loading loading={loading}>
+      {
+        Object.keys(userModelForm).length != 0 &&
+        <ThemeProvider theme={theme}>
+          <React.Fragment>
+            <Drawer
+              sx={{ '& .MuiDrawer-paper': { top: '65px' } }}
+              anchor={'right'}
+              open={props.drawerState}
+              onClose={() => props.openDrawer(false)}
+            >
+              <Box
+                sx={{ width: 400 }}
+                role="presentation"
+              >
+                <Grid container sx={{ padding: '15px' }}>
+                  <Grid item sm={12} md={3} xs={12}>
+                    <Avatar
+                      alt="Remy Sharp"
+                      src="/static/images/avatar/1.jpg"
+                      sx={{ width: 90, height: 90 }}
+                    />
+                  </Grid>
+                  <Grid item sx={{ justifyContent: 'center', alignItems: 'flex-start', display: 'flex', flex: 1, flexDirection: 'column', paddingLeft: '5px' }} sm={12} md={9} xs={12}>
+                    <Typography variant='subtitle1'>{props.selectedUser.nameSurname}</Typography>
+                    <Typography variant='subtitle1'>{props.selectedUser.email}</Typography>
+                  </Grid>
+                  <Grid container sx={{ marginTop: '20px' }}>
+                    <Grid item sm={12} md={12} xs={12}>
+                      <TextField
+                        sx={{ marginTop: '10px' }}
+                        size='small'
+                        disabled
+                        fullWidth
+                        id="outlined-disabled"
+                        label="Kullanıcı Adı"
+                        defaultValue={userModelForm.userName}
+                      />
+                    </Grid>
+                    <Grid item sm={12} md={12} xs={12}>
+                      <TextField
+                        sx={{ marginTop: '20px' }}
+                        size='small'
+                        disabled
+                        fullWidth
+                        id="outlined-disabled"
+                        label="Email"
+                        defaultValue={userModelForm.email}
+                      />
+                    </Grid>
+                    <Grid item sm={12} md={12} xs={12}>
+                      <TextField
+                        sx={{ marginTop: '20px' }}
+                        size='small'
+                        disabled
+                        fullWidth
+                        id="outlined-disabled"
+                        label="Nereden Keşfettim"
+                        defaultValue={userModelForm.discover}
+                      />
+                    </Grid>
+                    <Grid item sm={12} md={12} xs={12}>
+                      <TextField
+                        sx={{ marginTop: '20px' }}
+                        size='small'
+                        disabled
+                        fullWidth
+                        id="outlined-disabled"
+                        label="Doğum Tarihi"
+                        defaultValue={userModelForm.birthDay}
+                      />
+                    </Grid>
+                    <Grid item sm={12} md={12} xs={12}>
+                      <TextField
+                        sx={{ marginTop: '20px' }}
+                        size='small'
+                        disabled
+                        fullWidth
+                        id="outlined-disabled"
+                        label="Cinsiyet"
+                        defaultValue={userModelForm.gender}
+                      />
+                    </Grid>
+                    <Grid item sm={12} md={12} xs={12}>
+                      <TextField
+                        sx={{ marginTop: '20px' }}
+                        size='small'
+                        disabled
+                        fullWidth
+                        id="outlined-disabled"
+                        label="Son Giriş"
+                        defaultValue={new Date(userModelForm.userLoginHistory.lastSeen).toLocaleString().substring(0, 16)}
+                      />
+                    </Grid>
+                    <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '20px' }}>
+                      <FormControl fullWidth>
+                        <InputLabel id="demo-simple-select-label">Rol</InputLabel>
+                        <Select
+                          size='small'
+                          labelId="demo-simple-select-label"
+                          id="demo-simple-select"
+                          label="Rol"
+                          onChange={(e) => setRole(e.target.value as RoleType)}
+                          value={role}
+                        >
+                          <MenuItem value={RoleType.User}>Kullanıcı</MenuItem>
+                          <MenuItem value={RoleType.Moderator}>Moderatör</MenuItem>
+                          <MenuItem value={RoleType.Admin}>Yönetici</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '20px' }}>
+                      <FormControl fullWidth>
+                        <InputLabel id="demo-simple-select-label">Hesap Durumu</InputLabel>
+                        <Select
+                          size='small'
+                          labelId="demo-simple-select-label"
+                          id="demo-simple-select"
+                          label="Hesap Durumu"
+                          onChange={(e) => setStatus(e.target.value as any)}
+                          value={status ? 1 : 0}
+                        >
+                          <MenuItem value={0}>Aktif</MenuItem>
+                          <MenuItem value={1}>Pasif</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '20px' }}>
+                      <Button onClick={saveButon} fullWidth variant='contained'>
+                        Kaydet
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </Grid>
+              </Box>
+            </Drawer>
+          </React.Fragment>
+        </ThemeProvider>
+      }
+    </Loading>
   );
 }
+function createData(
+  name: string,
+  calories: number,
+  fat: number,
+  carbs: number,
+  protein: number,
+) {
+  return { name, calories, fat, carbs, protein };
+}
+
+const rows = [
+  createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
+  createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
+  createData('Eclair', 262, 16.0, 24, 6.0),
+  createData('Cupcake', 305, 3.7, 67, 4.3),
+  createData('Gingerbread', 356, 16.0, 49, 3.9),
+];

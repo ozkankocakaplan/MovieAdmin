@@ -1,84 +1,192 @@
-import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Paper, Select, SelectChangeEvent, TextField, Toolbar, Typography } from '@mui/material'
-import React, { useState } from 'react'
-import { Status } from '../../types/Entites';
+import { Box, Button, Checkbox, FormControl, Grid, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TextField, Toolbar, Typography } from '@mui/material'
+import { AxiosError } from 'axios';
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router';
+import Loading from '../../components/Loading';
+import { Categories, CategoryType, Manga, Status, Type } from '../../types/Entites';
+import { getCategories, postCategoryType, postManga } from '../../utils/api';
 
 export default function AddManga() {
-    const [age, setAge] = useState('');
-    const handleSelectChange = (event: SelectChangeEvent) => {
-        setAge(event.target.value as string);
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
+
+    const [categoriesService, setCategoriesService] = useState<Array<Categories>>([]);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [selectedCategoriesID, setSelectedCategoriesID] = useState<number[]>([]);
+
+
+
+
+    const [mangaForm, setMangaForm] = useState<Manga>({ name: '', description: '', arrangement: '', ageLimit: '', status: Status.Continues } as Manga);
+    const [mangaStatus, setMangaStatus] = useState(Status.Continues);
+
+    useEffect(() => {
+        loadCategories();
+    }, [])
+    const loadCategories = async () => {
+        await getCategories()
+            .then((res) => {
+                setCategoriesService(res.data.list);
+            }).catch((er) => {
+                console.log(er)
+            });
+        setLoading(false);
+    }
+    const handleChange = (event: SelectChangeEvent<typeof selectedCategories>) => {
+        const { target: { value }, } = event;
+        setSelectedCategories(typeof value === 'string' ? value.split(',') : value);
     };
+    const handleSelectedCategoriesID = (id: number) => {
+        var check = selectedCategoriesID.find((i) => i === id);
+        if (check != undefined) {
+            setSelectedCategoriesID(selectedCategoriesID.filter((y) => y !== id));
+        }
+        else {
+            setSelectedCategoriesID([...selectedCategoriesID, id]);
+        }
+    }
+    const saveButon = async () => {
+        await postManga(mangaForm)
+            .then(async (res) => {
+                if (res.data.isSuccessful) {
+                    var categoryTypeArray = new Array<CategoryType>();
+                    selectedCategoriesID.map((item: number) => {
+                        categoryTypeArray.push({ contentID: res.data.entity.id, type: Type.Manga, categoryID: item } as CategoryType);
+                    })
+                    await postCategoryType(categoryTypeArray).then((response) => {
+                        navigate("/anime/" + res.data.entity.id);
+                    })
+                        .catch((er: AxiosError) => {
+                            console.log(er)
+                        })
+                    navigate("/manga");
+                }
+
+            })
+            .catch((er) => {
+                console.log(er);
+            })
+    }
+
     return (
-        <Grid container sx={{ padding: "10px" }}>
-            <Paper sx={{ width: '100%', mb: 1 }}>
-                <Toolbar
-                    sx={{
-                        pl: { sm: 2 },
-                        pr: { xs: 1, sm: 1 }
-                    }}
-                >
-                    <Typography component="div"
-                        color={"inherit"}
-                        variant={"h6"}
-                        sx={{ flex: '1 1 100%' }}
+        <Loading loading={loading}>
+            <Grid container sx={{ padding: "10px" }}>
+                <Paper sx={{ width: '100%', mb: 1 }}>
+                    <Toolbar
+                        sx={{
+                            pl: { sm: 2 },
+                            pr: { xs: 1, sm: 1 }
+                        }}
                     >
-                        Yeni Manga Ekle
-                    </Typography>
-                    <Button variant='outlined'>
-                        Kaydet
-                    </Button>
-                </Toolbar>
-            </Paper>
-            <Grid container spacing={4}>
-                <Grid item xs={12} md={12} sm={12} >
-                    <Paper sx={{ width: '100%', '& .MuiTextField-root': { mt: 2 } }}>
-                        <div style={{ padding: 10 }}>
-                            <Box
-                                sx={{
+                        <Typography component="div"
+                            color={"inherit"}
+                            variant={"h6"}
+                            sx={{ flex: '1 1 100%' }}
+                        >
+                            Yeni Manga Ekle
+                        </Typography>
+                        <Button onClick={saveButon} variant='outlined'>
+                            Kaydet
+                        </Button>
+                    </Toolbar>
+                </Paper>
+                <Grid container spacing={4}>
+                    <Grid item xs={12} md={12} sm={12} >
+                        <Paper sx={{ width: '100%', '& .MuiTextField-root': { mt: 2 } }}>
+                            <div style={{ padding: 10 }}>
+                                <Box
+                                    sx={{
+                                        maxWidth: '100%',
+                                    }}>
+                                    <TextField
+                                        value={mangaForm.name}
+                                        onChange={(e) => setMangaForm({ ...mangaForm, name: e.target.value })}
+                                        label="Manga Adı"
+                                        fullWidth
+                                    ></TextField>
+                                </Box>
+                                <Box
+                                    sx={{
+                                        maxWidth: '100%',
+                                    }}>
+                                    <TextField
+                                        value={mangaForm.description}
+                                        onChange={(e) => setMangaForm({ ...mangaForm, description: e.target.value })}
+                                        rows={4}
+                                        label="Açıklama"
+                                        fullWidth multiline
+                                    ></TextField>
+                                </Box>
+                                <Box sx={{
+                                    marginTop: '10px',
                                     maxWidth: '100%',
                                 }}>
-                                <TextField
-                                    label="Manga Adı"
-                                    fullWidth
-                                ></TextField>
-                            </Box>
-                            <Box
-                                sx={{
+                                    <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
+                                        <InputLabel id="demo-multiple-checkbox-label">Kategoriler</InputLabel>
+                                        <Select
+                                            labelId="demo-multiple-checkbox-label"
+                                            id="demo-multiple-checkbox"
+                                            multiple
+                                            value={selectedCategories}
+                                            onChange={handleChange}
+                                            input={<OutlinedInput label="Kategoriler" />}
+                                            renderValue={(selected) => selected.join(', ')}
+                                            MenuProps={MenuProps}
+                                        >
+                                            {
+                                                categoriesService != null && categoriesService.length != 0 &&
+                                                categoriesService.map((item, index) => {
+                                                    return <MenuItem onClick={() => handleSelectedCategoriesID(item.id != null ? item.id : 0)} key={item.id} value={item.name}>
+                                                        <Checkbox checked={selectedCategories.indexOf(item.name) > -1} />
+                                                        <ListItemText primary={item.name} />
+                                                    </MenuItem>
+                                                })
+                                            }
+                                        </Select>
+                                    </FormControl>
+                                </Box>
+                                <Box sx={{
+                                    marginTop: '10px',
                                     maxWidth: '100%',
                                 }}>
-                                <TextField
-                                    rows={4}
-                                    label="Açıklama"
-                                    fullWidth multiline
-                                ></TextField>
-                            </Box>
-                            <Box sx={{
-                                marginTop: '10px', marginBottom: '10px',
-                                maxWidth: '100%',
-                            }}>
-                                <FormControl fullWidth>
-                                    <InputLabel id="demo-simple-select-label">Durum</InputLabel>
-                                    <Select
-                                        labelId="demo-simple-select-label"
-                                        id="demo-simple-select"
-                                        value={age}
-                                        label="Durum"
-                                        onChange={handleSelectChange}
-                                    >
-                                        <MenuItem value={Status.Continues}>Devam Ediyor</MenuItem>
-                                        <MenuItem value={Status.Completed}>Tamamlandı</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Box>
-                            <Grid item sm={12} md={12} xs={12} >
-                                <TextField
-                                    label="Yaş Sınırı"
-                                    fullWidth
-                                ></TextField>
-                            </Grid>
-                        </div>
-                    </Paper>
+                                    <FormControl fullWidth>
+                                        <InputLabel id="demo-simple-select-label">Durum</InputLabel>
+                                        <Select
+                                            labelId="demo-simple-select-label"
+                                            id="demo-simple-select"
+                                            value={mangaStatus}
+                                            label="Durum"
+                                            onChange={(e) => {
+                                                setMangaStatus(e.target.value as any);
+                                                setMangaForm({ ...mangaForm, status: e.target.value as Status })
+                                            }}
+                                        >
+                                            <MenuItem value={Status.Continues}>Devam Ediyor</MenuItem>
+                                            <MenuItem value={Status.Completed}>Tamamlandı</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Box>
+                                <Grid item sm={12} md={12} xs={12} >
+                                    <TextField
+                                        value={mangaForm.ageLimit}
+                                        onChange={(e) => setMangaForm({ ...mangaForm, ageLimit: e.target.value })}
+                                        label="Yaş Sınırı"
+                                        fullWidth
+                                    ></TextField>
+                                </Grid>
+                            </div>
+                        </Paper>
+                    </Grid>
                 </Grid>
             </Grid>
-        </Grid>
+        </Loading>
     )
 }
+const MenuProps = {
+    PaperProps: {
+        style: {
+            maxHeight: 48 * 4.5 + 8,
+            width: 250,
+        },
+    },
+};

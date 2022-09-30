@@ -1,35 +1,60 @@
-import { Add, Edit, PhotoCamera } from '@mui/icons-material';
-import { alpha, Autocomplete, Avatar, Box, Button, Checkbox, Drawer, FormControl, Grid, IconButton, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TableBody, TableCell, TableRow, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
+import { Add, Delete, Edit, PhotoCamera, Remove } from '@mui/icons-material';
+import { alpha, Autocomplete, Avatar, Box, Button, Checkbox, FormControl, Grid, IconButton, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TableBody, TableCell, TableRow, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
+import { AxiosError } from 'axios';
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router';
 import DataTable, { EnhancedTableToolbarProps } from '../components/DataTable';
+import DeleteDialog from '../components/DeleteDialog';
 import Loading from '../components/Loading'
+import ResultSnackbar, { Result } from '../components/ResultSnackbar';
 import RightDrawer from '../components/RightDrawer';
 import { getComparator, Order, stableSort } from '../components/TableHelper';
-import { Rosette as Rosettes } from '../types/Entites';
+import { Anime, AnimeEpisodes, Manga, MangaEpisodes, Rosette as Rosettes, RosetteContent, RosetteModels, Type } from '../types/Entites';
+import { baseUrl, deleteRosettes, getAnimeEpisodes, getAnimes, getFullMangaEpisodes, getMangas, getRosette, getRosetteContent, getRosettes, postRosette, postRosetteContent, putRosette, putRosetteContent, putUpdateImage } from '../utils/api';
 import { rosetteCells } from '../utils/HeadCells';
 
 export default function Rosette() {
-    const navigate = useNavigate();
     const [order, setOrder] = React.useState<Order>('asc');
     const [orderBy, setOrderBy] = React.useState<keyof Rosettes>('name');
     const [selected, setSelected] = React.useState<readonly string[]>([]);
     const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(5);
+    const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [serviceResponse, setServiceResponse] = useState<Array<Rosettes>>([]);
     const [loading, setLoading] = useState(true);
     const [addRosetteDrawer, setAddRosetteDrawer] = useState(false);
     const [editRosetteDrawer, setEditRosetteDrawer] = useState(false);
 
+    const [mangaService, setMangaService] = useState<Array<Manga>>([]);
+    const [animeService, setAnimeService] = useState<Array<Anime>>([]);
+
+    const [deleteDialog, setDeleteDialog] = useState(false);
+
     useEffect(() => {
-        loadManga();
+        loadAnimeAndManga();
+        loadRosette();
+        setLoading(false);
         return () => {
             setLoading(true);
         }
     }, [])
+    const loadRosette = async () => {
+        await getRosettes().then((res) => {
+            setServiceResponse(res.data.list);
+        })
+            .catch((er) => {
+                console.log(er);
+            })
+    }
+    const loadAnimeAndManga = async () => {
+        await getMangas().then((res) => {
+            setMangaService(res.data.list);
+        }).catch((er) => {
 
-    const loadManga = async () => {
-        setLoading(false);
+        })
+        await getAnimes().then((res) => {
+            setAnimeService(res.data.list);
+        }).catch((er) => {
+            console.log(er);
+        })
     }
     const handleClick = (event: React.MouseEvent<unknown>, name: string) => {
         const selectedIndex = selected.indexOf(name);
@@ -88,14 +113,14 @@ export default function Rosette() {
                 </IconButton>}
                 {numSelected > 0 && (
                     <>
-                        {numSelected == 1 && <Tooltip title="Edit">
+                        {numSelected == 1 && <Tooltip title="Düzenle">
                             <IconButton onClick={props.goEditPage}>
                                 <Edit />
                             </IconButton>
                         </Tooltip>}
-                        <Tooltip title="Delete">
+                        <Tooltip title="Sil">
                             <IconButton onClick={props.handleDelete}>
-
+                                <Delete />
                             </IconButton>
                         </Tooltip>
                     </>
@@ -129,8 +154,10 @@ export default function Rosette() {
                             rowsPerPage={rowsPerPage}
                             setRowsPerPage={(data) => setRowsPerPage(data)}
                             goAddPage={() => setAddRosetteDrawer(true)}
-                            goEditPage={() => navigate("/manga/" + selected[0])}
-                            handleDelete={() => { console.log("delete") }}
+                            goEditPage={() => {
+                                setEditRosetteDrawer(true);
+                            }}
+                            handleDelete={() => { setDeleteDialog(true) }}
                             tableName="Rozetler"
                             tableBody={!loading && serviceResponse.length != 0 &&
                                 <TableBody>
@@ -142,7 +169,7 @@ export default function Rosette() {
                                             return (
                                                 <TableRow
                                                     hover
-                                                    onClick={(event) => handleClick(event, row.name)}
+                                                    onClick={(event) => handleClick(event, row.id.toString())}
                                                     role="checkbox"
                                                     aria-checked={isItemSelected}
                                                     tabIndex={-1}
@@ -166,13 +193,14 @@ export default function Rosette() {
                                                         padding="none"
                                                     >
                                                         <img
-                                                            style={{ height: '100px', width: '100px' }}
-                                                            src={`https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?w=164&h=164&fit=crop&auto=format`}
-                                                            srcSet={`https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
-                                                            alt={"deneme"}
+                                                            style={{ height: '60px', width: '60px' }}
+                                                            src={baseUrl + row.img}
+                                                            srcSet={baseUrl + row.img}
+                                                            alt={row.name}
                                                             loading="lazy"
                                                         />
                                                     </TableCell>
+                                                    <TableCell >{row.name}</TableCell>
                                                 </TableRow>
                                             );
                                         })}
@@ -190,353 +218,590 @@ export default function Rosette() {
                         />
                     </Paper>
                 </Grid>
-            </Grid >
-            <AddRosetteDrawer drawerState={addRosetteDrawer} openDrawer={addToggleDrawer} />
-            <EditRosetteDrawer drawerState={editRosetteDrawer} openDrawer={editToggleDrawer} />
+            </Grid>
+            <DeleteDialog
+                open={deleteDialog}
+                handleClose={() => { setDeleteDialog(false) }}
+                dialogTitle={"Silmek istiyor musunuz"}
+                dialogContentText={"Bu işlem geri alınamaz"}
+                yesButon={
+                    <Button onClick={async () => {
+                        await deleteRosettes(selected.map((item) => parseInt(item)));
+                        window.location.reload();
+                    }}>
+                        Sil
+                    </Button>
+                }
+                noButon={
+                    <Button onClick={() => setDeleteDialog(false)}>
+                        Kapat
+                    </Button>
+                }
+            />
+            <AddRosetteDrawer mangas={mangaService} animes={animeService} drawerState={addRosetteDrawer} openDrawer={addToggleDrawer} />
+            {editRosetteDrawer && <EditRosetteDrawer rosetteID={parseInt(selected[0])} mangas={mangaService} animes={animeService} drawerState={editRosetteDrawer} openDrawer={editToggleDrawer} />}
         </Loading>
     )
 }
-const names = [
-    'Oliver Hansen',
-    'Van Henry',
-    'April Tucker',
-    'Ralph Hubbard',
-    'Omar Alexander',
-    'Carlos Abbott',
-    'Miriam Wagner',
-    'Bradley Wilkerson',
-    'Virginia Andrews',
-    'Kelly Snyder',
-];
-const ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
+
 const MenuProps = {
     PaperProps: {
         style: {
-            maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+            maxHeight: 48 * 4.5 + 8,
             width: 250,
         },
     },
 };
-export const AddRosetteDrawer = (props: { openDrawer: (status: boolean) => void, drawerState: boolean }) => {
-    const [personName, setPersonName] = React.useState<string[]>([]);
+interface SelectedManga extends Manga {
+    firstLetter: string
+}
+interface SelectedAnime extends Anime {
+    firstLetter: string
+}
+export const AddRosetteDrawer = (props: {
+    openDrawer: (status: boolean) => void,
+    drawerState: boolean,
+    animes: Array<Anime>,
+    mangas: Array<Manga>
+}) => {
 
-    const handleChange = (event: SelectChangeEvent<typeof personName>) => {
-        const { target: { value }, } = event;
-        setPersonName(
-            // On autofill we get a stringified value.
-            typeof value === 'string' ? value.split(',') : value,
-        );
-    };
-    const options = top100Films.map((option) => {
-        const firstLetter = option.title[0].toUpperCase();
+    const [rosetteForm, setRosetteForm] = useState<Rosettes>({ name: '' } as Rosettes);
+    const [selectedImage, setSelectedImage] = useState('');
+    const [type, setType] = useState<number>(0);
+
+    const [selectedAnime, setSelectedAnime] = useState<SelectedAnime | null>(null);
+    const [selectedManga, setSelectedManga] = useState<SelectedManga | null>(null);
+
+    const [selectedEpisodes, setSelectedEpisodes] = useState<Array<string>>([]);
+    const [loading, setLoading] = useState(true);
+
+    const [animeEpisodes, setAnimeEpisodes] = useState<Array<AnimeEpisodes>>([]);
+    const [mangaEpisodes, setMangaEpisodes] = useState<Array<MangaEpisodes>>([]);
+
+    const [episodeLoading, setEpisodeLoading] = useState(true);
+
+    const [selectedEpisodesID, setSelectedEpisodesID] = useState<number[]>([]);
+
+
+    useEffect(() => {
+        setSelectedAnime(null);
+        setSelectedManga(null);
+        setSelectedEpisodesID([]);
+        setSelectedEpisodes([]);
+    }, [type]);
+    useEffect(() => {
+        if (type === 0) {
+            loadAnimeEpisode();
+            setLoading(false);
+        }
+        else {
+            loadMangaEpisode();
+            setLoading(false);
+
+        }
+    }, [selectedAnime, selectedManga])
+
+    const handleSelectedEpisodesID = (id: number) => {
+        var check = selectedEpisodesID.find((i) => i === id);
+        if (check != undefined) {
+            setSelectedEpisodesID(selectedEpisodesID.filter((y) => y !== id));
+        }
+        else {
+            setSelectedEpisodesID([...selectedEpisodesID, id]);
+        }
+    }
+    const loadAnimeEpisode = async () => {
+        setEpisodeLoading(true);
+        await getAnimeEpisodes()
+            .then((res) => {
+                setAnimeEpisodes(res.data.list.filter((y) => y.animeID === selectedAnime?.id))
+            }).catch((er) => {
+                console.log(er);
+            });
+        setEpisodeLoading(false);
+    }
+    const loadMangaEpisode = async () => {
+        setEpisodeLoading(true);
+        await getFullMangaEpisodes()
+            .then((res) => {
+                setMangaEpisodes(res.data.list.filter((y) => y.mangaID === selectedManga?.id));
+            }).catch((er) => {
+                console.log(er);
+            });
+        setEpisodeLoading(false);
+    }
+
+    const animeList = props.animes.map((option) => {
+        const firstLetter = option.animeName[0].toUpperCase();
         return {
             firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
             ...option,
         };
     });
-    return (
-        <RightDrawer {...props} >
-            <Box
-                role="presentation"
-            >
-                <Grid container sx={{ padding: '0px 15px' }} >
-                    <Grid item sx={{ marginTop: '20px', justifyContent: 'center', alignItems: 'center', display: 'flex', }} sm={12} md={12} xs={12}>
-                        <IconButton color="primary" aria-label="upload picture" component="label">
-                            <input hidden accept="image/*" type="file" />
-                            <PhotoCamera />
-                        </IconButton>
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12}>
-                        <Box
-                            sx={{
-                                marginTop: '10px',
-                                maxWidth: '100%',
-                            }}>
-                            <TextField
-                                label="Rozet Adı"
-                                fullWidth
-                            ></TextField>
-                        </Box>
-                    </Grid>
-                    <Grid sx={{ marginTop: '10px' }} item sm={12} md={12} xs={12}>
-                        <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
-                            <Autocomplete
-                                id="grouped-demo"
-                                options={options.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
-                                groupBy={(option) => option.firstLetter}
-                                getOptionLabel={(option) => option.title}
-                                renderInput={(params) => <TextField {...params} label="Anime veya Manga" />}
-                            />
-                        </FormControl>
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12}>
-                        <Box
-                            sx={{
-                                marginTop: '10px',
-                                maxWidth: '100%',
-                            }}>
-                            <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
-                                <InputLabel id="demo-multiple-checkbox-label">Bölümler</InputLabel>
-                                <Select
-
-                                    labelId="demo-multiple-checkbox-label"
-                                    id="demo-multiple-checkbox"
-                                    multiple
-                                    value={personName}
-                                    onChange={handleChange}
-                                    input={<OutlinedInput label="Bölümler" />}
-                                    renderValue={(selected) => selected.join(', ')}
-                                    MenuProps={MenuProps}
-                                >
-                                    {names.map((name) => (
-                                        <MenuItem key={name} value={name}>
-                                            <Checkbox checked={personName.indexOf(name) > -1} />
-                                            <ListItemText primary={name} />
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Box>
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12}>
-                        <Box
-                            sx={{
-                                marginTop: '10px',
-                            }}>
-                            <Button
-                                size='medium'
-                                fullWidth variant='contained'>
-                                Kaydet
-                            </Button>
-                        </Box>
-                    </Grid>
-                </Grid>
-            </Box>
-        </RightDrawer>
-    )
-}
-export const EditRosetteDrawer = (props: { openDrawer: (status: boolean) => void, drawerState: boolean }) => {
-    const [personName, setPersonName] = React.useState<string[]>([]);
-
-    const handleChange = (event: SelectChangeEvent<typeof personName>) => {
-        const {
-            target: { value },
-        } = event;
-        setPersonName(
-            // On autofill we get a stringified value.
-            typeof value === 'string' ? value.split(',') : value,
-        );
-    };
-    const options = top100Films.map((option) => {
-        const firstLetter = option.title[0].toUpperCase();
+    const mangaList = props.mangas.map((option) => {
+        const firstLetter = option.name[0].toUpperCase();
         return {
             firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
             ...option,
         };
     });
+    const defaultAnimeProps = {
+        options: props.animes,
+        getOptionLabel: (option: Anime) => option.animeName,
+    };
+    const defaultMangaProps = {
+        options: props.mangas,
+        getOptionLabel: (option: Manga) => option.name,
+    };
+    const saveButon = async () => {
+        await postRosette(rosetteForm)
+            .then(async (res) => {
+                var rosetteContents = Array<RosetteContent>();
+                selectedEpisodesID.map((item) => {
+                    rosetteContents.push({ rosetteID: res.data.entity.id, episodesID: item, type: type === 0 ? Type.Anime : Type.Manga, contentID: type === 0 ? selectedAnime?.id : selectedManga?.id } as RosetteContent);
+                });
+                await postRosetteContent(rosetteContents)
+                    .then((response) => {
+                        window.location.reload();
+                    })
+            }).catch((er) => {
+
+            })
+    }
     return (
         <RightDrawer {...props} >
-            <Box
-                role="presentation"
-            >
-                <Grid container sx={{ padding: '0px 15px' }} >
-                    <Grid item sx={{ marginTop: '20px', justifyContent: 'center', alignItems: 'center', display: 'flex', }} sm={12} md={12} xs={12}>
-                        <IconButton color="primary" aria-label="upload picture" component="label">
-                            <input hidden accept="image/*" type="file" />
-                            <PhotoCamera />
-                        </IconButton>
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12}>
-                        <Box
-                            sx={{
-                                marginTop: '10px',
-                                maxWidth: '100%',
-                            }}>
-                            <TextField
-                                label="Rozet Adı"
-                                fullWidth
-                            ></TextField>
-                        </Box>
-                    </Grid>
-                    <Grid sx={{ marginTop: '10px' }} item sm={12} md={12} xs={12}>
-                        <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
-                            <Autocomplete
-                                id="grouped-demo"
-                                options={options.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
-                                groupBy={(option) => option.firstLetter}
-                                getOptionLabel={(option) => option.title}
-                                renderInput={(params) => <TextField {...params} label="Anime veya Manga" />}
-                            />
-                        </FormControl>
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12}>
-                        <Box
-                            sx={{
-                                marginTop: '10px',
-                                maxWidth: '100%',
-                            }}>
-                            <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
-                                <InputLabel id="demo-multiple-checkbox-label">Bölümler</InputLabel>
+            <Loading loading={loading}>
+                <Box
+                    role="presentation"
+                >
+                    <Grid container sx={{ padding: '0px 15px' }} >
+                        <Grid item sx={{ marginTop: '20px', justifyContent: 'center', alignItems: 'center', display: 'flex', }} sm={12} md={12} xs={12}>
+                            {selectedImage.length != 0 && <IconButton onClick={() => setSelectedImage('')} sx={{ position: 'absolute' }}>
+                                <Delete />
+                            </IconButton>}
+                            {selectedImage.length === 0 && <IconButton color="primary" aria-label="upload picture" component="label">
+                                <input onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                        setSelectedImage(URL.createObjectURL(e.target.files[0]))
+                                    }
+                                }}
+                                    hidden accept="image/*" type="file" />
+                                <PhotoCamera />
+                            </IconButton>}
+                            {selectedImage.length != 0 && <img src={selectedImage} style={{ height: '125px', width: '125px' }} />}
+                        </Grid>
+                        <Grid item sm={12} md={12} xs={12}>
+                            <Box
+                                sx={{
+                                    marginTop: '10px',
+                                    maxWidth: '100%',
+                                }}>
+                                <TextField
+                                    value={rosetteForm.name}
+                                    onChange={(e) => setRosetteForm({ ...rosetteForm, name: e.target.value })}
+                                    label="Rozet Adı"
+                                    fullWidth
+                                ></TextField>
+                            </Box>
+                        </Grid>
+                        <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '10px' }}>
+                            <FormControl fullWidth>
+                                <InputLabel id="demo-simple-select-label">Tür</InputLabel>
                                 <Select
-                                    labelId="demo-multiple-checkbox-label"
-                                    id="demo-multiple-checkbox"
-                                    multiple
-                                    value={personName}
-                                    onChange={handleChange}
-                                    input={<OutlinedInput label="Bölümler" />}
-                                    renderValue={(selected) => selected.join(', ')}
-                                    MenuProps={MenuProps}
+                                    labelId="demo-simple-select-label"
+                                    id="demo-simple-select"
+                                    label="Tür"
+                                    value={type}
+                                    onChange={(e) => setType(e.target.value as any)}
                                 >
-                                    {names.map((name) => (
-                                        <MenuItem key={name} value={name}>
-                                            <Checkbox checked={personName.indexOf(name) > -1} />
-                                            <ListItemText primary={name} />
-                                        </MenuItem>
-                                    ))}
+                                    <MenuItem value={0}>Anime</MenuItem>
+                                    <MenuItem value={1}>Manga</MenuItem>
                                 </Select>
                             </FormControl>
-                        </Box>
+                        </Grid>
+                        <Grid sx={{ marginTop: '10px' }} item sm={12} md={12} xs={12}>
+                            <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
+                                {type === 1 ? <Autocomplete
+                                    {...defaultMangaProps}
+                                    value={selectedManga}
+                                    onChange={(event: any, newValue: Manga | null) => {
+                                        if (newValue != null) {
+                                            setSelectedManga(newValue as any)
+                                        }
+                                    }}
+                                    id="grouped-demo"
+                                    isOptionEqualToValue={(option, value) => option.name === value.name}
+                                    options={mangaList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
+                                    groupBy={(option) => option.firstLetter}
+                                    getOptionLabel={(option) => option.name}
+                                    renderInput={(params) => <TextField {...params} label="Manga" />}
+                                />
+                                    :
+                                    <Autocomplete
+                                        {...defaultAnimeProps}
+                                        value={selectedAnime}
+                                        onChange={(event: any, newValue: Anime | null) => {
+                                            if (newValue != null) {
+                                                setSelectedAnime(newValue as any)
+                                            }
+                                        }}
+                                        isOptionEqualToValue={(option, value) => option.animeName === value.animeName}
+                                        id="grouped-demo"
+                                        options={animeList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
+                                        groupBy={(option) => option.firstLetter}
+                                        getOptionLabel={(option) => option.animeName}
+                                        renderInput={(params) => <TextField {...params} label="Anime" />}
+                                    />
+                                }
+                            </FormControl>
+                        </Grid>
+                        {!episodeLoading && <Grid item sm={12} md={12} xs={12}>
+                            <Box
+                                sx={{
+                                    marginTop: '10px',
+                                    maxWidth: '100%',
+                                }}>
+                                <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
+                                    <InputLabel id="demo-multiple-checkbox-label">Bölümler</InputLabel>
+                                    <Select
+                                        labelId="demo-multiple-checkbox-label"
+                                        id="demo-multiple-checkbox"
+                                        multiple
+                                        value={selectedEpisodes}
+                                        onChange={(e) => setSelectedEpisodes(e.target.value as any)}
+                                        input={<OutlinedInput label="Bölümler" />}
+                                        renderValue={(selected) => selected.join(', ')}
+                                        MenuProps={MenuProps}
+                                    >
+                                        {
+                                            type === 0 ?
+                                                animeEpisodes.map((name) => (
+                                                    <MenuItem onClick={() => handleSelectedEpisodesID(name.id)} key={name.id} value={name.episodeName}>
+                                                        <Checkbox checked={selectedEpisodes.indexOf(name.episodeName) > -1} />
+                                                        <ListItemText primary={name.episodeName} />
+                                                    </MenuItem>
+                                                ))
+                                                :
+                                                mangaEpisodes.map((name) => (
+                                                    <MenuItem onClick={() => handleSelectedEpisodesID(name.id)} key={name.id} value={name.name}>
+                                                        <Checkbox checked={selectedEpisodes.indexOf(name.name) > -1} />
+                                                        <ListItemText primary={name.name} />
+                                                    </MenuItem>
+                                                ))
+                                        }
+                                    </Select>
+                                </FormControl>
+                            </Box>
+                        </Grid>}
+                        <Grid item sm={12} md={12} xs={12}>
+                            <Box
+                                sx={{
+                                    marginTop: '10px',
+                                }}>
+                                <Button
+                                    onClick={saveButon}
+                                    size='medium'
+                                    fullWidth variant='contained'>
+                                    Kaydet
+                                </Button>
+                            </Box>
+                        </Grid>
                     </Grid>
-                    <Grid item sm={12} md={12} xs={12}>
-                        <Box
-                            sx={{
-                                marginTop: '10px',
-                                maxWidth: '100%',
-                            }}>
-                            <Button>
-                                Kaydet
-                            </Button>
-                        </Box>
-                    </Grid>
-                </Grid>
-            </Box>
+                </Box>
+            </Loading>
         </RightDrawer>
     )
 }
-const top100Films = [
-    { title: 'The Shawshank Redemption', year: 1994 },
-    { title: 'The Godfather', year: 1972 },
-    { title: 'The Godfather: Part II', year: 1974 },
-    { title: 'The Dark Knight', year: 2008 },
-    { title: '12 Angry Men', year: 1957 },
-    { title: "Schindler's List", year: 1993 },
-    { title: 'Pulp Fiction', year: 1994 },
-    {
-        title: 'The Lord of the Rings: The Return of the King',
-        year: 2003,
-    },
-    { title: 'The Good, the Bad and the Ugly', year: 1966 },
-    { title: 'Fight Club', year: 1999 },
-    {
-        title: 'The Lord of the Rings: The Fellowship of the Ring',
-        year: 2001,
-    },
-    {
-        title: 'Star Wars: Episode V - The Empire Strikes Back',
-        year: 1980,
-    },
-    { title: 'Forrest Gump', year: 1994 },
-    { title: 'Inception', year: 2010 },
-    {
-        title: 'The Lord of the Rings: The Two Towers',
-        year: 2002,
-    },
-    { title: "One Flew Over the Cuckoo's Nest", year: 1975 },
-    { title: 'Goodfellas', year: 1990 },
-    { title: 'The Matrix', year: 1999 },
-    { title: 'Seven Samurai', year: 1954 },
-    {
-        title: 'Star Wars: Episode IV - A New Hope',
-        year: 1977,
-    },
-    { title: 'City of God', year: 2002 },
-    { title: 'Se7en', year: 1995 },
-    { title: 'The Silence of the Lambs', year: 1991 },
-    { title: "It's a Wonderful Life", year: 1946 },
-    { title: 'Life Is Beautiful', year: 1997 },
-    { title: 'The Usual Suspects', year: 1995 },
-    { title: 'Léon: The Professional', year: 1994 },
-    { title: 'Spirited Away', year: 2001 },
-    { title: 'Saving Private Ryan', year: 1998 },
-    { title: 'Once Upon a Time in the West', year: 1968 },
-    { title: 'American History X', year: 1998 },
-    { title: 'Interstellar', year: 2014 },
-    { title: 'Casablanca', year: 1942 },
-    { title: 'City Lights', year: 1931 },
-    { title: 'Psycho', year: 1960 },
-    { title: 'The Green Mile', year: 1999 },
-    { title: 'The Intouchables', year: 2011 },
-    { title: 'Modern Times', year: 1936 },
-    { title: 'Raiders of the Lost Ark', year: 1981 },
-    { title: 'Rear Window', year: 1954 },
-    { title: 'The Pianist', year: 2002 },
-    { title: 'The Departed', year: 2006 },
-    { title: 'Terminator 2: Judgment Day', year: 1991 },
-    { title: 'Back to the Future', year: 1985 },
-    { title: 'Whiplash', year: 2014 },
-    { title: 'Gladiator', year: 2000 },
-    { title: 'Memento', year: 2000 },
-    { title: 'The Prestige', year: 2006 },
-    { title: 'The Lion King', year: 1994 },
-    { title: 'Apocalypse Now', year: 1979 },
-    { title: 'Alien', year: 1979 },
-    { title: 'Sunset Boulevard', year: 1950 },
-    {
-        title: 'Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb',
-        year: 1964,
-    },
-    { title: 'The Great Dictator', year: 1940 },
-    { title: 'Cinema Paradiso', year: 1988 },
-    { title: 'The Lives of Others', year: 2006 },
-    { title: 'Grave of the Fireflies', year: 1988 },
-    { title: 'Paths of Glory', year: 1957 },
-    { title: 'Django Unchained', year: 2012 },
-    { title: 'The Shining', year: 1980 },
-    { title: 'WALL·E', year: 2008 },
-    { title: 'American Beauty', year: 1999 },
-    { title: 'The Dark Knight Rises', year: 2012 },
-    { title: 'Princess Mononoke', year: 1997 },
-    { title: 'Aliens', year: 1986 },
-    { title: 'Oldboy', year: 2003 },
-    { title: 'Once Upon a Time in America', year: 1984 },
-    { title: 'Witness for the Prosecution', year: 1957 },
-    { title: 'Das Boot', year: 1981 },
-    { title: 'Citizen Kane', year: 1941 },
-    { title: 'North by Northwest', year: 1959 },
-    { title: 'Vertigo', year: 1958 },
-    {
-        title: 'Star Wars: Episode VI - Return of the Jedi',
-        year: 1983,
-    },
-    { title: 'Reservoir Dogs', year: 1992 },
-    { title: 'Braveheart', year: 1995 },
-    { title: 'M', year: 1931 },
-    { title: 'Requiem for a Dream', year: 2000 },
-    { title: 'Amélie', year: 2001 },
-    { title: 'A Clockwork Orange', year: 1971 },
-    { title: 'Like Stars on Earth', year: 2007 },
-    { title: 'Taxi Driver', year: 1976 },
-    { title: 'Lawrence of Arabia', year: 1962 },
-    { title: 'Double Indemnity', year: 1944 },
-    {
-        title: 'Eternal Sunshine of the Spotless Mind',
-        year: 2004,
-    },
-    { title: 'Amadeus', year: 1984 },
-    { title: 'To Kill a Mockingbird', year: 1962 },
-    { title: 'Toy Story 3', year: 2010 },
-    { title: 'Logan', year: 2017 },
-    { title: 'Full Metal Jacket', year: 1987 },
-    { title: 'Dangal', year: 2016 },
-    { title: 'The Sting', year: 1973 },
-    { title: '2001: A Space Odyssey', year: 1968 },
-    { title: "Singin' in the Rain", year: 1952 },
-    { title: 'Toy Story', year: 1995 },
-    { title: 'Bicycle Thieves', year: 1948 },
-    { title: 'The Kid', year: 1921 },
-    { title: 'Inglourious Basterds', year: 2009 },
-    { title: 'Snatch', year: 2000 },
-    { title: '3 Idiots', year: 2009 },
-    { title: 'Monty Python and the Holy Grail', year: 1975 },
-];
+export const EditRosetteDrawer = (props: {
+    openDrawer: (status: boolean) => void,
+    drawerState: boolean,
+    animes: Array<Anime>,
+    mangas: Array<Manga>,
+    rosetteID: number
+}) => {
+    const [rosetteForm, setRosetteForm] = useState<Rosettes>({ name: '' } as Rosettes);
+    const [selectedImage, setSelectedImage] = useState('');
+    const [type, setType] = useState<number>(0);
+
+    const [selectedAnime, setSelectedAnime] = useState<SelectedAnime | null>(null);
+    const [selectedManga, setSelectedManga] = useState<SelectedManga | null>(null);
+
+    const [selectedEpisodes, setSelectedEpisodes] = useState<Array<string>>([]);
+    const [selectedEpisodesID, setSelectedEpisodesID] = useState<Array<number>>([]);
+    const [loading, setLoading] = useState(true);
+
+    const [animeEpisodes, setAnimeEpisodes] = useState<Array<AnimeEpisodes>>([]);
+    const [mangaEpisodes, setMangaEpisodes] = useState<Array<MangaEpisodes>>([]);
+
+    const [result, setResult] = useState<Result>({ status: false, text: '' });
+    const [isResultOpen, setIsResultOpen] = useState(false);
+    useEffect(() => {
+        loadRosette();
+    }, [])
+    useEffect(() => {
+        setSelectedAnime(null);
+        setSelectedManga(null);
+        setSelectedEpisodes([]);
+    }, [type]);
+    useEffect(() => {
+        setLoading(true);
+        if (type === 0) {
+            loadAnimeEpisode();
+            setLoading(false);
+        }
+        else {
+            loadMangaEpisode();
+            setLoading(false);
+
+        }
+    }, [selectedAnime, selectedManga])
+
+    const loadRosette = async () => {
+        await getRosette(props.rosetteID)
+            .then(async (res) => {
+                if (res.data.isSuccessful && res.data.entity != null) {
+                    setRosetteForm(res.data.entity.rosette);
+                    setSelectedImage(baseUrl + res.data.entity.rosette.img);
+                    if (type === 0) {
+                        const firstLetter = res.data.entity.anime.animeName.toUpperCase();
+                        setSelectedAnime({ ...res.data.entity.anime, firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter } as SelectedAnime);
+                        setAnimeEpisodes(res.data.entity.animeEpisodes);
+                        setSelectedEpisodes(res.data.entity.animeEpisodes.map((item) => item.episodeName.toString()))
+                        setSelectedEpisodesID(res.data.entity.animeEpisodes.map((item) => item.id))
+                    }
+                    else {
+                        const firstLetter = res.data.entity.manga.name.toUpperCase();
+                        setSelectedManga({ ...res.data.entity.manga, firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter, } as SelectedManga);
+                        setMangaEpisodes(res.data.entity.mangaEpisodes);
+                        setSelectedEpisodes(res.data.entity.mangaEpisodes.map((item) => item.name.toString()))
+                        setSelectedEpisodesID(res.data.entity.mangaEpisodes.map((item) => item.id))
+                    }
+                }
+            })
+            .catch((er) => {
+                console.log(er);
+            });
+        setLoading(false);
+    }
+    const loadAnimeEpisode = async () => {
+
+        await getAnimeEpisodes()
+            .then((res) => {
+                setAnimeEpisodes(res.data.list.filter((y) => y.animeID === selectedAnime?.id))
+            }).catch((er) => {
+                console.log(er);
+            });
+
+    }
+    const loadMangaEpisode = async () => {
+
+        await getFullMangaEpisodes()
+            .then((res) => {
+                setMangaEpisodes(res.data.list.filter((y) => y.mangaID === selectedManga?.id));
+            }).catch((er) => {
+                console.log(er);
+            });
+
+    }
+
+
+
+    const animeList = props.animes.map((option) => {
+        const firstLetter = option.animeName[0].toUpperCase();
+        return {
+            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
+            ...option,
+        };
+    });
+    const mangaList = props.mangas.map((option) => {
+        const firstLetter = option.name[0].toUpperCase();
+        return {
+            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
+            ...option,
+        };
+    });
+    const defaultAnimeProps = {
+        options: props.animes,
+        getOptionLabel: (option: Anime) => option.animeName,
+    };
+    const defaultMangaProps = {
+        options: props.mangas,
+        getOptionLabel: (option: Manga) => option.name,
+    };
+    const handleSelectedEpisodesID = (id: number) => {
+        var check = selectedEpisodesID.find((i) => i === id);
+        if (check !== undefined) {
+            setSelectedEpisodesID(selectedEpisodesID.filter((y) => y !== id));
+        }
+        else {
+            setSelectedEpisodesID([...selectedEpisodesID, id]);
+        }
+    }
+    const saveButon = async () => {
+        await putRosette(rosetteForm)
+            .then(async (res) => {
+                var rosetteContents = Array<RosetteContent>();
+                selectedEpisodesID.map((item) => {
+                    rosetteContents.push({ rosetteID: res.data.entity.id, episodesID: item, type: type === 0 ? Type.Anime : Type.Manga, contentID: type === 0 ? selectedAnime?.id : selectedManga?.id } as RosetteContent);
+                });
+                await putRosetteContent(rosetteContents, res.data.entity.id)
+                    .then((response) => {
+                        window.location.reload();
+                    })
+            }).catch((er) => {
+
+            })
+    }
+    return (
+        <RightDrawer {...props} >
+            <Loading loading={loading}>
+                <Box
+                    role="presentation"
+                >
+                    <Grid container sx={{ padding: '0px 15px' }} >
+                        <Grid item sx={{ marginTop: '20px', justifyContent: 'center', alignItems: 'center', display: 'flex' }} sm={12} md={12} xs={12}>
+                            {selectedImage.length !== 0 && <IconButton onClick={() => setSelectedImage('')} sx={{ position: 'absolute', top: 10, marginLeft: '150px' }}>
+                                <Delete />
+                            </IconButton>}
+                            {selectedImage.length === 0 && <IconButton color="primary" aria-label="upload picture" component="label">
+                                <input onChange={async (e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                        var form = new FormData();
+                                        form.append("file", e.target.files[0] as any);
+                                        setSelectedImage(URL.createObjectURL(e.target.files[0]));
+                                        await putUpdateImage(props.rosetteID, form).then((res) => {
+                                            setResult({ status: res.data.isSuccessful, text: res.data.entity != null ? "Başarıyla Güncellendi" : "Hata Oluştu" })
+                                        }).catch((er: AxiosError) => {
+                                            setResult({ status: false, text: er.message })
+                                        });
+                                        setIsResultOpen(true);
+                                    }
+                                }}
+                                    hidden accept="image/*" type="file" />
+                                <PhotoCamera />
+                            </IconButton>}
+                            {selectedImage.length !== 0 && <img src={selectedImage} style={{ height: '125px', width: '125px' }} />}
+                        </Grid>
+                        <Grid item sm={12} md={12} xs={12}>
+                            <Box
+                                sx={{
+                                    marginTop: '10px',
+                                    maxWidth: '100%',
+                                }}>
+                                <TextField
+                                    value={rosetteForm.name}
+                                    onChange={(e) => setRosetteForm({ ...rosetteForm, name: e.target.value })}
+                                    label="Rozet Adı"
+                                    fullWidth
+                                ></TextField>
+                            </Box>
+                        </Grid>
+                        <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '10px' }}>
+                            <FormControl fullWidth>
+                                <InputLabel id="demo-simple-select-label">Tür</InputLabel>
+                                <Select
+                                    labelId="demo-simple-select-label"
+                                    id="demo-simple-select"
+                                    label="Tür"
+                                    value={type}
+                                    onChange={(e) => setType(e.target.value as any)}
+                                >
+                                    <MenuItem value={0}>Anime</MenuItem>
+                                    <MenuItem value={1}>Manga</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid sx={{ marginTop: '10px' }} item sm={12} md={12} xs={12}>
+                            <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
+                                {type === 1 ? <Autocomplete
+                                    {...defaultMangaProps}
+                                    value={selectedManga}
+                                    onChange={(event: any, newValue: Manga | null) => {
+                                        if (newValue != null) {
+                                            setSelectedManga(newValue as any)
+                                        }
+                                    }}
+                                    id="grouped-demo"
+                                    isOptionEqualToValue={(option, value) => option.name === value.name}
+                                    options={mangaList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
+                                    groupBy={(option) => option.firstLetter}
+                                    getOptionLabel={(option) => option.name}
+                                    renderInput={(params) => <TextField {...params} label="Manga" />}
+                                />
+                                    :
+                                    <Autocomplete
+                                        {...defaultAnimeProps}
+                                        value={selectedAnime}
+                                        onChange={(event: any, newValue: Anime | null) => {
+                                            if (newValue != null) {
+                                                setSelectedAnime(newValue as any)
+                                            }
+                                        }}
+                                        isOptionEqualToValue={(option, value) => option.animeName === value.animeName}
+                                        id="grouped-demo"
+                                        options={animeList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
+                                        groupBy={(option) => option.firstLetter}
+                                        getOptionLabel={(option) => option.animeName}
+                                        renderInput={(params) => <TextField {...params} label="Anime" />}
+                                    />
+                                }
+                            </FormControl>
+                        </Grid>
+                        <Grid item sm={12} md={12} xs={12}>
+                            <Box
+                                sx={{
+                                    marginTop: '10px',
+                                    maxWidth: '100%',
+                                }}>
+                                <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
+                                    <InputLabel id="demo-multiple-checkbox-label">Bölümler</InputLabel>
+                                    <Select
+                                        labelId="demo-multiple-checkbox-label"
+                                        id="demo-multiple-checkbox"
+                                        multiple
+                                        value={selectedEpisodes}
+                                        onChange={(e) => setSelectedEpisodes(e.target.value as any)}
+                                        input={<OutlinedInput label="Bölümler" />}
+                                        renderValue={(selected) => selected.join(', ')}
+                                        MenuProps={MenuProps}
+                                    >
+                                        {
+                                            type === 0 ?
+                                                animeEpisodes.map((name) => (
+                                                    <MenuItem onClick={() => handleSelectedEpisodesID(name.id)} key={name.id} value={name.episodeName}>
+                                                        <Checkbox checked={selectedEpisodes.indexOf(name.episodeName) > -1} />
+                                                        <ListItemText primary={name.episodeName} />
+                                                    </MenuItem>
+                                                ))
+                                                :
+                                                mangaEpisodes.map((name) => (
+                                                    <MenuItem onClick={() => handleSelectedEpisodesID(name.id)} key={name.id} value={name.name}>
+                                                        <Checkbox checked={selectedEpisodes.indexOf(name.name) > -1} />
+                                                        <ListItemText primary={name.name} />
+                                                    </MenuItem>
+                                                ))
+                                        }
+                                    </Select>
+                                </FormControl>
+                            </Box>
+                        </Grid>
+                        <Grid item sm={12} md={12} xs={12}>
+                            <Box
+                                sx={{
+                                    marginTop: '10px',
+                                }}>
+                                <Button
+                                    onClick={saveButon}
+                                    size='medium'
+                                    fullWidth variant='contained'>
+                                    Kaydet
+                                </Button>
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </Box>
+                <ResultSnackbar result={result} open={isResultOpen} closeOpen={() => setIsResultOpen(false)} />
+            </Loading>
+        </RightDrawer>
+    )
+}

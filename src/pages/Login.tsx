@@ -32,6 +32,7 @@ export const LoginPage = () => {
                     setLoginResult({ status: false, text: res.data.exceptionMessage });
                 }
                 else {
+                    console.log(res.data);
                     setLoginResult({ status: true, text: "Giriş Başarılı" });
                     setTimeout(() => {
                         login(res.data.entity);

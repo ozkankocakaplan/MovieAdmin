@@ -4,25 +4,27 @@ import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 import Checkbox from '@mui/material/Checkbox';
 import DataTable, { EnhancedTableToolbarProps } from '../components/DataTable';
-import { alpha, Grid, IconButton, Paper, Toolbar, Tooltip, Typography } from '@mui/material';
+import { alpha, Button, Grid, IconButton, Paper, Toolbar, Tooltip, Typography } from '@mui/material';
 import { getComparator, Order, stableSort } from '../components/TableHelper';
 import { useNavigate } from 'react-router';
 import { animeCells } from '../utils/HeadCells';
-import { Anime as Animes } from '../types/Entites';
-import { getPaginatedAnime } from '../utils/api';
+import { Anime as Animes, Status } from '../types/Entites';
+import { deleteAnimes, getPaginatedAnime } from '../utils/api';
 import Loading from '../components/Loading';
 import { Add, Delete, Edit } from '@mui/icons-material';
+import DeleteDialog from '../components/DeleteDialog';
 
 export default function Anime() {
     const navigate = useNavigate();
     const [order, setOrder] = React.useState<Order>('asc');
-    const [orderBy, setOrderBy] = React.useState<keyof Animes>('siteRating');
+    const [orderBy, setOrderBy] = React.useState<keyof Animes>('malRating');
     const [selected, setSelected] = React.useState<readonly string[]>([]);
     const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(5);
+    const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [serviceResponse, setServiceResponse] = useState<Array<Animes>>([]);
     const [loading, setLoading] = useState(true);
 
+    const [deleteAnimeDialog, setDeleteAnimeDialog] = useState(false);
     useEffect(() => {
         loadAnime();
         return () => {
@@ -31,7 +33,6 @@ export default function Anime() {
     }, [])
     const loadAnime = async () => {
         await getPaginatedAnime(page + 1, rowsPerPage).then((res) => {
-            console.log(res.data);
             if (res.data.hasExceptionError == false && res.data.exceptionMessage == null) {
                 setServiceResponse(res.data.list);
             }
@@ -86,7 +87,6 @@ export default function Anime() {
                         variant="subtitle1"
                         component="div"
                     >
-                        {/* {numSelected} */}
                     </Typography>
                 ) : (
                     <Typography
@@ -103,13 +103,15 @@ export default function Anime() {
                 </IconButton>}
                 {numSelected > 0 && (
                     <>
-                        {numSelected == 1 && <Tooltip title="Edit">
+                        {numSelected == 1 && <Tooltip title="Düzenle">
                             <IconButton onClick={props.goEditPage}>
                                 <Edit />
                             </IconButton>
                         </Tooltip>}
-                        <Tooltip title="Delete">
-                            <IconButton onClick={props.handleDelete}>
+                        <Tooltip title="Sil">
+                            <IconButton onClick={() => {
+                                setDeleteAnimeDialog(true);
+                            }}>
                                 <Delete />
                             </IconButton>
                         </Tooltip>
@@ -146,12 +148,12 @@ export default function Anime() {
                                     {stableSort(serviceResponse, getComparator(order, orderBy))
                                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                         .map((row, index) => {
-                                            const isItemSelected = isSelected(row.seoUrl);
+                                            const isItemSelected = isSelected(row.id.toString());
                                             const labelId = `enhanced-table-checkbox-${index}`;
                                             return (
                                                 <TableRow
                                                     hover
-                                                    onClick={(event) => handleClick(event, row.animeName)}
+                                                    onClick={(event) => handleClick(event, row.id.toString())}
                                                     role="checkbox"
                                                     aria-checked={isItemSelected}
                                                     tabIndex={-1}
@@ -175,7 +177,7 @@ export default function Anime() {
                                                         padding="none"
                                                     >
                                                         <img
-                                                            style={{ height: '100px', width: '100px' }}
+                                                            style={{ height: '60px', width: '60px' }}
                                                             src={`https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?w=164&h=164&fit=crop&auto=format`}
                                                             srcSet={`https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
                                                             alt={"deneme"}
@@ -190,19 +192,13 @@ export default function Anime() {
                                                     >
                                                         {row.animeName}
                                                     </TableCell>
-                                                    <TableCell
-                                                        component="th"
-                                                        id={labelId}
-                                                        scope="row"
-                                                        padding="none"
-                                                    >
-                                                        {row.animeName}
-                                                    </TableCell>
-                                                    <TableCell >{row.animeName}</TableCell>
-                                                    <TableCell>{row.animeName}</TableCell>
-                                                    <TableCell align='center'>{row.animeName}</TableCell>
-                                                    <TableCell component="th" align='center'>{row.animeName}</TableCell>
-                                                    <TableCell>{row.animeName}</TableCell>
+                                                    <TableCell >{row.malRating}</TableCell>
+                                                    <TableCell>{row.ageLimit}</TableCell>
+                                                    <TableCell align='center'>{row.seasonCount}</TableCell>
+                                                    <TableCell component="th" align='center'></TableCell>
+                                                    <TableCell>{
+                                                        row.status === Status.Completed ? "Tamamlandı" : "Devam Ediyor"
+                                                    }</TableCell>
                                                 </TableRow>
                                             );
                                         })}
@@ -221,6 +217,30 @@ export default function Anime() {
                     </Paper>
                 </Grid>
             </Grid >
+            <DeleteDialog
+                open={deleteAnimeDialog}
+                handleClose={() => { setDeleteAnimeDialog(false) }}
+                dialogTitle={"Silmek istiyor musunuz"}
+                dialogContentText={"Bu işlem geri alınamaz"}
+                yesButon={
+                    <Button onClick={async () => {
+                        await deleteAnimes(selected.map((item) => parseInt(item)))
+                            .then((res) => {
+                                
+                            }).catch((er) => {
+                                console.log(er)
+                            })
+                        window.location.reload();
+                    }}>
+                        Sil
+                    </Button>
+                }
+                noButon={
+                    <Button onClick={() => setDeleteAnimeDialog(false)}>
+                        Kapat
+                    </Button>
+                }
+            />
         </Loading>
     )
 }

@@ -1,11 +1,13 @@
-import { Add, Edit } from '@mui/icons-material';
-import { alpha, Checkbox, Grid, IconButton, Paper, TableBody, TableCell, TableRow, Toolbar, Tooltip, Typography } from '@mui/material';
+import { Add, Delete, Edit } from '@mui/icons-material';
+import { alpha, Button, Checkbox, Grid, IconButton, Paper, TableBody, TableCell, TableRow, Toolbar, Tooltip, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router';
 import DataTable, { EnhancedTableToolbarProps } from '../components/DataTable';
+import DeleteDialog from '../components/DeleteDialog';
 import Loading from '../components/Loading';
 import { getComparator, Order, stableSort } from '../components/TableHelper';
-import { Manga as Mangas } from '../types/Entites';
+import { Manga as Mangas, Status } from '../types/Entites';
+import { deleteMangas, getPaginatedManga } from '../utils/api';
 import { mangaCells } from '../utils/HeadCells';
 
 export default function Manga() {
@@ -14,19 +16,26 @@ export default function Manga() {
     const [orderBy, setOrderBy] = React.useState<keyof Mangas>('name');
     const [selected, setSelected] = React.useState<readonly string[]>([]);
     const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(5);
+    const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [serviceResponse, setServiceResponse] = useState<Array<Mangas>>([]);
     const [loading, setLoading] = useState(true);
 
+    const [deleteManga, setDeleteManga] = useState(false);
+
     useEffect(() => {
         loadManga();
-
         return () => {
             setLoading(true);
         }
     }, [])
 
     const loadManga = async () => {
+        await getPaginatedManga(page + 1, rowsPerPage)
+            .then((res) => {
+                setServiceResponse(res.data.list);
+            }).catch((er) => {
+
+            })
         setLoading(false);
     }
     const handleClick = (event: React.MouseEvent<unknown>, name: string) => {
@@ -93,7 +102,7 @@ export default function Manga() {
                         </Tooltip>}
                         <Tooltip title="Delete">
                             <IconButton onClick={props.handleDelete}>
-
+                                <Delete />
                             </IconButton>
                         </Tooltip>
                     </>
@@ -122,19 +131,19 @@ export default function Manga() {
                             setRowsPerPage={(data) => setRowsPerPage(data)}
                             goAddPage={() => navigate("/manga/add")}
                             goEditPage={() => navigate("/manga/" + selected[0])}
-                            handleDelete={() => { console.log("delete") }}
+                            handleDelete={() => { setDeleteManga(true) }}
                             tableName="Mangalar"
                             tableBody={!loading && serviceResponse.length != 0 &&
                                 <TableBody>
                                     {stableSort(serviceResponse, getComparator(order, orderBy))
                                         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                         .map((row, index) => {
-                                            const isItemSelected = isSelected(row.seoUrl);
+                                            const isItemSelected = isSelected(row.id.toString());
                                             const labelId = `enhanced-table-checkbox-${index}`;
                                             return (
                                                 <TableRow
                                                     hover
-                                                    onClick={(event) => handleClick(event, row.name)}
+                                                    onClick={(event) => handleClick(event, row.id.toString())}
                                                     role="checkbox"
                                                     aria-checked={isItemSelected}
                                                     tabIndex={-1}
@@ -158,13 +167,20 @@ export default function Manga() {
                                                         padding="none"
                                                     >
                                                         <img
-                                                            style={{ height: '100px', width: '100px' }}
+                                                            style={{ height: '60px', width: '60px' }}
                                                             src={`https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?w=164&h=164&fit=crop&auto=format`}
                                                             srcSet={`https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
                                                             alt={"deneme"}
                                                             loading="lazy"
                                                         />
                                                     </TableCell>
+                                                    <TableCell>{row.name}</TableCell>
+                                                    <TableCell>{row.description}</TableCell>
+                                                    <TableCell>{row.ageLimit}</TableCell>
+                                                    <TableCell></TableCell>
+                                                    <TableCell>{
+                                                        row.status === Status.Completed ? "Tamamlandı" : "Devam Ediyor"
+                                                    }</TableCell>
                                                 </TableRow>
                                             );
                                         })}
@@ -183,7 +199,28 @@ export default function Manga() {
                     </Paper>
                 </Grid>
 
-            </Grid >
+            </Grid>
+            <DeleteDialog
+                open={deleteManga}
+                handleClose={() => { setDeleteManga(false) }}
+                dialogTitle={"Silmek istiyor musunuz"}
+                dialogContentText={"Bu işlem geri alınamaz"}
+                yesButon={
+                    <Button onClick={async () => {
+                        await deleteMangas(selected.map((item) => parseInt(item)));
+                        window.location.reload();
+                    }}>
+                        Sil
+                    </Button>
+                }
+                noButon={
+                    <Button onClick={() => {
+                        setDeleteManga(false)
+                    }}>
+                        Kapat
+                    </Button>
+                }
+            />
         </Loading>
     )
 }

@@ -1,5 +1,5 @@
 import { HeadCell } from "../components/TableHelper";
-import { Anime, AnimeEpisodes, Categories, ContentComplaint, Episodes, Users } from "../types/Entites";
+import { Anime, AnimeEpisodes, AnimeSeasonMusic, Categories, ContentComplaint, Episodes, Users } from "../types/Entites";
 
 export const animeCells: HeadCell<Anime>[] = [
     {
@@ -13,12 +13,6 @@ export const animeCells: HeadCell<Anime>[] = [
         align: 'left',
         disablePadding: true,
         label: 'Anime Adı',
-    },
-    {
-        id: 2,
-        align: 'left',
-        disablePadding: true,
-        label: 'Açıklama',
     },
     {
         id: 3,
@@ -220,4 +214,52 @@ export const episodesCells: HeadCell<Episodes>[] = [
         disablePadding: true,
         label: 'İndirme Url',
     },
+]
+export const seasonMusicCells: HeadCell<AnimeSeasonMusic>[] = [
+    {
+        id: 0,
+        align: 'left',
+        disablePadding: true,
+        label: 'Müzik Adı',
+    },
+    {
+        id: 1,
+        align: 'left',
+        disablePadding: true,
+        label: 'Müzik Url',
+    },
+]
+export const mangaEpisodesCells: HeadCell<Episodes>[] = [
+    {
+        id: 0,
+        align: 'left',
+        disablePadding: true,
+        label: 'Bölüm Adı',
+    },
+    {
+        id: 1,
+        align: 'left',
+        disablePadding: true,
+        label: 'Açıklama',
+    }
+]
+export const mangaEpisodeContentCells: HeadCell<Episodes>[] = [
+    {
+        id: 0,
+        align: 'left',
+        disablePadding: true,
+        label: 'Resim',
+    },
+    {
+        id: 1,
+        align: 'left',
+        disablePadding: true,
+        label: 'Açıklama',
+    },
+    {
+        id: 2,
+        align: 'left',
+        disablePadding: true,
+        label: 'Sıralama',
+    }
 ]

@@ -1,4 +1,4 @@
-import { Add, Edit } from '@mui/icons-material';
+import { Add, Delete, Edit } from '@mui/icons-material';
 import { alpha, Button, Checkbox, Grid, IconButton, Paper, TableBody, TableCell, TableRow, Toolbar, Tooltip, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router';
@@ -15,7 +15,7 @@ export default function Categories() {
     const [orderBy, setOrderBy] = React.useState<keyof Category>('name');
     const [selected, setSelected] = React.useState<readonly string[]>([]);
     const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(5);
+    const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [serviceResponse, setServiceResponse] = useState<Array<Category>>([]);
     const [loading, setLoading] = useState(true);
     const [deleteDialog, setDeleteDialog] = useState(false);
@@ -102,7 +102,7 @@ export default function Categories() {
                         </Tooltip>}
                         <Tooltip title="Delete">
                             <IconButton onClick={props.handleDelete}>
-
+                                <Delete />
                             </IconButton>
                         </Tooltip>
                     </>

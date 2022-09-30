@@ -14,7 +14,8 @@ const Transition = React.forwardRef(function Transition(
 interface IFullDialogProps {
     open: boolean,
     handleClose: () => void,
-    children: React.ReactNode
+    children: React.ReactNode,
+    extraData?: React.ReactNode
 }
 
 export default function FullDialog(props: IFullDialogProps) {
@@ -27,7 +28,7 @@ export default function FullDialog(props: IFullDialogProps) {
                 TransitionComponent={Transition}
             >
                 <AppBar sx={{ position: 'relative' }}>
-                    <Toolbar>
+                    <Toolbar sx={{ display: 'flex', flex: 1, justifyContent: 'space-between', flexDirection: 'row' }}>
                         <IconButton
                             edge="start"
                             color="inherit"
@@ -36,6 +37,9 @@ export default function FullDialog(props: IFullDialogProps) {
                         >
                             <GridCloseIcon />
                         </IconButton>
+                        {
+                            props.extraData && props.extraData
+                        }
                     </Toolbar>
                 </AppBar>
                 {

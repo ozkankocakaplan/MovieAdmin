@@ -8,6 +8,7 @@ import Loading from '../components/Loading'
 import { getComparator, Order, stableSort } from '../components/TableHelper';
 import { ContentComplaint } from '../types/Entites';
 import { contentComplaintCells } from '../utils/HeadCells';
+import { Box } from '@mui/system';
 
 export default function Complaint() {
     const navigate = useNavigate();
@@ -91,7 +92,7 @@ export default function Complaint() {
     };
     return (
         <Loading loading={loading}>
-            <Grid md={12} sm={12} xs={12} container sx={{ padding: "10px" }}>
+            <Box sx={{ padding: "10px" }}>
                 <Grid item xs={12} sx={{ maxHeight: 400, outline: 0 }}>
                     <Paper sx={{ width: '100%', mb: 2 }}>
                         <DataTable
@@ -157,7 +158,7 @@ export default function Complaint() {
                         />
                     </Paper>
                 </Grid>
-                <Grid md={12} sm={12} xs={12} container>
+                <Grid md={12} sm={12} xs={12} item>
                     <Grid item xs={12} sx={{ maxHeight: 400, outline: 0 }}>
                         <Paper sx={{ width: '100%', mb: 2 }}>
                             <DataTable
@@ -224,8 +225,7 @@ export default function Complaint() {
                         </Paper>
                     </Grid>
                 </Grid>
-            </Grid>
-
+            </Box>
         </Loading>
     )
 }
