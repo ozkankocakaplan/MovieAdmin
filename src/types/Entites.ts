@@ -111,6 +111,7 @@ export interface Announcement extends BaseEntity {
     warningDate: string;
     comingSoonInfo: string;
     comingSoonDate: string;
+    about: string
 }
 export interface Categories extends BaseEntity {
     name: string;
@@ -155,16 +156,18 @@ export interface Episodes extends BaseEntity {
 
 export interface FanArt extends BaseEntity {
     userID: number;
-    animeID: number;
+    contentID: number;
     image: string;
     description: string;
+    type: Type;
+    users: Users
 }
 
 export interface HomeSlider extends BaseEntity {
     image: string;
     sliderTitle: string;
     description: string;
-    displayOrder: number;
+    url: string;
     isDisplay: boolean;
 }
 
@@ -175,6 +178,7 @@ export interface Like extends BaseEntity {
 }
 
 export interface Manga extends BaseEntity {
+    animeID: number
     image: string;
     name: string;
     description: string;
@@ -304,4 +308,8 @@ export interface ReportModels {
     mangaCount: number;
     animeCount: number;
     userCount: number;
+}
+export interface FanArtModels extends FanArt {
+    anime: Anime;
+    manga: Manga;
 }

@@ -16,6 +16,8 @@ import Settings from "./pages/Settings";
 import AddManga from "./pages/Manga/AddManga";
 import EditManga from "./pages/Manga/EditManga";
 import Complaint from "./pages/Complaint";
+import Web from "./pages/Web";
+import FanArts from "./pages/FanArts";
 
 
 export default function App() {
@@ -28,6 +30,8 @@ export default function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="anime" element={<Anime />} />
         <Route path="complaint" element={<Complaint />} />
+        <Route path="fanarts" element={<FanArts />} />
+        <Route path="web" element={<Web />} />
         <Route path="/anime/add" element={<AddAnime />} />
         <Route path="/anime/:id" element={<EditAnime />} />
         <Route path="manga" element={<Manga />} />

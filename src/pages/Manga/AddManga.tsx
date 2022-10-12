@@ -1,11 +1,14 @@
-import { Box, Button, Checkbox, FormControl, Grid, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TextField, Toolbar, Typography } from '@mui/material'
+import { Autocomplete, Box, Button, Checkbox, FormControl, Grid, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TextField, Toolbar, Typography } from '@mui/material'
 import { AxiosError } from 'axios';
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router';
 import Loading from '../../components/Loading';
-import { Categories, CategoryType, Manga, Status, Type } from '../../types/Entites';
-import { getCategories, postCategoryType, postManga } from '../../utils/api';
+import { Anime, Categories, CategoryType, Manga, Status, Type } from '../../types/Entites';
+import { getAnimes, getCategories, postCategoryType, postManga } from '../../utils/api';
 
+interface SelectedAnime extends Anime {
+    firstLetter: string
+}
 export default function AddManga() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -16,11 +19,15 @@ export default function AddManga() {
 
 
 
+    const [selectedAnime, setSelectedAnime] = useState<SelectedAnime | null>(null);
 
-    const [mangaForm, setMangaForm] = useState<Manga>({ name: '', description: '', arrangement: '', ageLimit: '', status: Status.Continues } as Manga);
+    const [animeListService, setAnimeList] = useState<Array<Anime>>([]);
+
+    const [mangaForm, setMangaForm] = useState<Manga>({ animeID: 0, name: '', description: '', arrangement: '', ageLimit: '', status: Status.Continues } as Manga);
     const [mangaStatus, setMangaStatus] = useState(Status.Continues);
 
     useEffect(() => {
+        loadAnime();
         loadCategories();
     }, [])
     const loadCategories = async () => {
@@ -46,7 +53,7 @@ export default function AddManga() {
         }
     }
     const saveButon = async () => {
-        await postManga(mangaForm)
+        await postManga({ ...mangaForm, animeID: selectedAnime != null ? selectedAnime.id : 0 })
             .then(async (res) => {
                 if (res.data.isSuccessful) {
                     var categoryTypeArray = new Array<CategoryType>();
@@ -67,7 +74,24 @@ export default function AddManga() {
                 console.log(er);
             })
     }
-
+    const loadAnime = async () => {
+        await getAnimes().then((res) => {
+            setAnimeList(res.data.list);
+        }).catch((er) => {
+            console.log(er);
+        })
+    }
+    const animeList = animeListService.map((option) => {
+        const firstLetter = option.animeName[0].toUpperCase();
+        return {
+            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
+            ...option,
+        };
+    });
+    const defaultAnimeProps = {
+        options: animeListService,
+        getOptionLabel: (option: Anime) => option.animeName,
+    };
     return (
         <Loading loading={loading}>
             <Grid container sx={{ padding: "10px" }}>
@@ -94,6 +118,25 @@ export default function AddManga() {
                     <Grid item xs={12} md={12} sm={12} >
                         <Paper sx={{ width: '100%', '& .MuiTextField-root': { mt: 2 } }}>
                             <div style={{ padding: 10 }}>
+                                <Grid sx={{ marginTop: '10px' }} item sm={12} md={12} xs={12}>
+                                    <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
+                                        <Autocomplete
+                                            {...defaultAnimeProps}
+                                            value={selectedAnime}
+                                            onChange={(event: any, newValue: Anime | null) => {
+                                                if (newValue != null) {
+                                                    setSelectedAnime(newValue as any)
+                                                }
+                                            }}
+                                            isOptionEqualToValue={(option, value) => option.animeName === value.animeName}
+                                            id="grouped-demo"
+                                            options={animeList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
+                                            groupBy={(option) => option.firstLetter}
+                                            getOptionLabel={(option) => option.animeName}
+                                            renderInput={(params) => <TextField {...params} label="Anime" />}
+                                        />
+                                    </FormControl>
+                                </Grid>
                                 <Box
                                     sx={{
                                         maxWidth: '100%',

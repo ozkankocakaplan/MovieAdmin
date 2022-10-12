@@ -216,7 +216,7 @@ export default function Anime() {
                         />
                     </Paper>
                 </Grid>
-            </Grid >
+            </Grid>
             <DeleteDialog
                 open={deleteAnimeDialog}
                 handleClose={() => { setDeleteAnimeDialog(false) }}

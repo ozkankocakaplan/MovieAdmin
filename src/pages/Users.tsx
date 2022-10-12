@@ -4,12 +4,12 @@ import DataTable, { EnhancedTableToolbarProps } from '../components/DataTable';
 
 import { alpha, Avatar, Box, Button, Checkbox, createTheme, Drawer, FormControl, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, ThemeProvider, Toolbar, Tooltip, Typography } from '@mui/material';
 import { AxiosError } from 'axios';
-import { useLocation, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { getComparator, Order, stableSort } from '../components/TableHelper';
 import { RoleType, UserModel, Users as User } from '../types/Entites';
 import { getPaginatedUsers, getUserByID, putIsBanned, putRole } from '../utils/api';
 import { userCells } from '../utils/HeadCells';
-import { Edit, Delete, Block } from '@mui/icons-material';
+import { Edit, Delete } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Users() {
@@ -118,14 +118,6 @@ export default function Users() {
                 <Delete />
               </IconButton>
             </Tooltip>
-            {
-              selectedUser.roleType != RoleType.Admin &&
-              <Tooltip title="Engelle">
-                <IconButton sx={{ color: 'red' }} onClick={props.handleDelete}>
-                  <Block />
-                </IconButton>
-              </Tooltip>
-            }
           </>
         )}
       </Toolbar>
@@ -333,7 +325,7 @@ const UserDetails = (props: { openDrawer: (status: boolean) => void, drawerState
                         fullWidth
                         id="outlined-disabled"
                         label="Doğum Tarihi"
-                        defaultValue={userModelForm.birthDay}
+                        defaultValue={userModelForm.birthDay.substring(0, 10)}
                       />
                     </Grid>
                     <Grid item sm={12} md={12} xs={12}>
@@ -406,20 +398,3 @@ const UserDetails = (props: { openDrawer: (status: boolean) => void, drawerState
     </Loading>
   );
 }
-function createData(
-  name: string,
-  calories: number,
-  fat: number,
-  carbs: number,
-  protein: number,
-) {
-  return { name, calories, fat, carbs, protein };
-}
-
-const rows = [
-  createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData('Eclair', 262, 16.0, 24, 6.0),
-  createData('Cupcake', 305, 3.7, 67, 4.3),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
-];

@@ -163,6 +163,7 @@ const DataTable = <T extends object>(props: IDataTableProps<T>) => {
                 </Table>
             </TableContainer>
             {props.tableBody && <TablePagination
+                labelRowsPerPage="Sayfa başına"
                 rowsPerPageOptions={[10, 50, 100]}
                 component="div"
                 count={props.rows.length}

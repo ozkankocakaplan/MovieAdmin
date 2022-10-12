@@ -15,7 +15,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 
-import { Home, Settings, PersonPin, People, Movie, Book, ChevronLeft, Menu, Logout, Dashboard, SchemaRounded, Feedback } from '@mui/icons-material';
+import { Home, Settings, PersonPin, People, Movie, Book, ChevronLeft, Menu, Logout, Dashboard, SchemaRounded, Feedback, Web, CommentBank, CommentBankRounded } from '@mui/icons-material';
 import { AppBar, Drawer } from "./AppBar";
 import { Button } from "@mui/material";
 import { RoleType } from "../types/Entites";
@@ -129,6 +129,12 @@ export const MainListItems = () => {
                 </ListItemIcon>
                 <ListItemText primary="Manga" />
             </ListItemButton>
+            <ListItemButton href="/fanarts">
+                <ListItemIcon>
+                    <CommentBankRounded />
+                </ListItemIcon>
+                <ListItemText primary="Fanart ve Eleştiri" />
+            </ListItemButton>
             <ListItemButton href="/users">
                 <ListItemIcon>
                     <People />
@@ -152,6 +158,12 @@ export const MainListItems = () => {
                     <Feedback />
                 </ListItemIcon>
                 <ListItemText primary="Şikayetler" />
+            </ListItemButton>
+            <ListItemButton href="/web">
+                <ListItemIcon>
+                    <Web />
+                </ListItemIcon>
+                <ListItemText primary="Web İçerik" />
             </ListItemButton>
             <ListItemButton href="/settings">
                 <ListItemIcon>

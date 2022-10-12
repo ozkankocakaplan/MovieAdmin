@@ -6,8 +6,8 @@ import Stack from '@mui/material/Stack';
 
 import { Add, Delete, Edit } from '@mui/icons-material'
 import { Accordion, AccordionDetails, AccordionSummary, alpha, Box, Button, Checkbox, Drawer, FormControl, Grid, IconButton, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TableBody, TableCell, TableRow, TextField, Toolbar, Tooltip, Typography } from '@mui/material'
-import { deleteAnime, deleteAnimeEpisode, getAnimeByID, getAnimeEpisodeContent, getAnimeEpisodeContentByEpisodeID, getAnimeEpisodesByID, getAnimeSeasonsByAnimeID, getCategories, getCategoryTypes, postAnimeEpisode, postAnimeEpisodeContent, postAnimeSeason, putAnime, putAnimeEpisode, putAnimeEpisodeContent } from '../../utils/api'
-import { Anime, AnimeEpisodes, AnimeSeason, Categories, Episodes, Status, Type, VideoType } from '../../types/Entites';
+import { deleteAnime, deleteAnimeEpisode, getAnimeByID, getAnimeEpisodeContent, getAnimeEpisodeContentByEpisodeID, getAnimeEpisodesByID, getAnimeSeasonsByAnimeID, getCategories, getCategoryTypes, postAnimeEpisode, postAnimeEpisodeContent, postAnimeSeason, putAnime, putAnimeEpisode, putAnimeEpisodeContent, putCategoryType } from '../../utils/api'
+import { Anime, AnimeEpisodes, AnimeSeason, Categories, CategoryType, Episodes, Status, Type, VideoType } from '../../types/Entites';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
@@ -149,12 +149,16 @@ export default function EditAnime() {
     }
   }
   const updateAnime = async () => {
-    await putAnime(animeForm).then((res) => {
-      window.location.reload();
+    await putAnime(animeForm);
+    await putCategoryType(convertCategoryType());
+    window.location.reload();
+  }
+  const convertCategoryType = () => {
+    var newArray = Array<CategoryType>();
+    selectedCategoriesID.map((item) => {
+      newArray.push({ categoryID: item, type: Type.Anime, contentID: id as any } as CategoryType);
     })
-      .catch((er) => {
-
-      });
+    return newArray;
   }
   const updateButon = async () => {
     await putAnimeEpisode({ ...animeEpisodeForm, seasonID: selectedSeasonID })

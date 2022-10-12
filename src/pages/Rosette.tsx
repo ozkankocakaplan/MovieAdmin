@@ -47,6 +47,7 @@ export default function Rosette() {
     const loadAnimeAndManga = async () => {
         await getMangas().then((res) => {
             setMangaService(res.data.list);
+            console.log(res.data.list);
         }).catch((er) => {
 
         })
@@ -282,7 +283,7 @@ export const AddRosetteDrawer = (props: {
 
     const [selectedEpisodesID, setSelectedEpisodesID] = useState<number[]>([]);
 
-
+    const [formData, setFormData] = useState(new FormData());
     useEffect(() => {
         setSelectedAnime(null);
         setSelectedManga(null);
@@ -354,7 +355,7 @@ export const AddRosetteDrawer = (props: {
         getOptionLabel: (option: Manga) => option.name,
     };
     const saveButon = async () => {
-        await postRosette(rosetteForm)
+        await postRosette(rosetteForm, formData)
             .then(async (res) => {
                 var rosetteContents = Array<RosetteContent>();
                 selectedEpisodesID.map((item) => {
@@ -382,6 +383,7 @@ export const AddRosetteDrawer = (props: {
                             {selectedImage.length === 0 && <IconButton color="primary" aria-label="upload picture" component="label">
                                 <input onChange={(e) => {
                                     if (e.target.files && e.target.files[0]) {
+                                        formData.append("img", e.target.files[0] as any);
                                         setSelectedImage(URL.createObjectURL(e.target.files[0]))
                                     }
                                 }}
@@ -429,11 +431,11 @@ export const AddRosetteDrawer = (props: {
                                             setSelectedManga(newValue as any)
                                         }
                                     }}
+                                    getOptionLabel={(option) => option.name}
                                     id="grouped-demo"
                                     isOptionEqualToValue={(option, value) => option.name === value.name}
                                     options={mangaList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
                                     groupBy={(option) => option.firstLetter}
-                                    getOptionLabel={(option) => option.name}
                                     renderInput={(params) => <TextField {...params} label="Manga" />}
                                 />
                                     :

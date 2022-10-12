@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { Accordion, AccordionDetails, AccordionSummary, alpha, Box, Button, Checkbox, Drawer, FormControl, Grid, IconButton, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TableBody, TableCell, TableRow, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, alpha, Autocomplete, Box, Button, Checkbox, Drawer, FormControl, Grid, IconButton, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TableBody, TableCell, TableRow, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router';
 import Loading from '../../components/Loading';
-import { Categories, Manga, MangaEpisodeContent, MangaEpisodes, Status } from '../../types/Entites';
-import { deleteManga, deleteMangaEpisode, deleteMangaEpisodeContent, deleteMangaEpisodes, getCategories, getMangaByID, getMangaEpisode, getMangaEpisodeContent, getMangaEpisodeContents, getMangaEpisodes, postMangaContentEpisode, postMangaEpisodes, putManga, putMangaContentEpisode, putMangaEpisodes } from '../../utils/api';
+import { Anime, Categories, CategoryType, Manga, MangaEpisodeContent, MangaEpisodes, Status, Type } from '../../types/Entites';
+import { deleteManga, deleteMangaEpisode, deleteMangaEpisodeContent, deleteMangaEpisodes, getAnimes, getCategories, getCategoryTypes, getMangaByID, getMangaEpisode, getMangaEpisodeContent, getMangaEpisodeContents, getMangaEpisodes, postMangaContentEpisode, postMangaEpisodes, putCategoryType, putManga, putMangaContentEpisode, putMangaEpisodes } from '../../utils/api';
 import DataTable, { EnhancedTableToolbarProps } from '../../components/DataTable';
 import { Order } from '../../components/TableHelper';
 import { Add, Delete, Edit, PhotoCamera } from '@mui/icons-material';
@@ -11,6 +11,7 @@ import { mangaEpisodeContentCells, mangaEpisodesCells } from '../../utils/HeadCe
 import { GridExpandMoreIcon } from '@mui/x-data-grid';
 import FullDialog from '../../components/FullDialog';
 import DeleteDialog from '../../components/DeleteDialog';
+import { AxiosError } from 'axios';
 const MenuProps = {
     PaperProps: {
         style: {
@@ -19,6 +20,9 @@ const MenuProps = {
         },
     },
 };
+interface SelectedAnime extends Anime {
+    firstLetter: string
+}
 export default function EditManga() {
     var navigate = useNavigate();
     const { id } = useParams();
@@ -32,8 +36,7 @@ export default function EditManga() {
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
 
-
-    const [categoriesService, setCategoriesService] = useState<Array<Categories>>([]);
+    const [categoriesServiceResponse, setCategoriesServiceResponse] = useState<Array<Categories>>([]);
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedCategoriesID, setSelectedCategoriesID] = useState<number[]>([]);
 
@@ -53,30 +56,65 @@ export default function EditManga() {
     const [mangaEpisodeDeletes, setMangaEpisodeDeletes] = useState(false);
     const [mangaDelete, setMangaDelete] = useState(false);
 
+
+    const [selectedAnime, setSelectedAnime] = useState<SelectedAnime | null>(null);
+
+    const [animeListService, setAnimeList] = useState<Array<Anime>>([]);
+
     useEffect(() => {
         loadData();
     }, []);
+    useEffect(() => {
+        var check = animeListService.find((y) => y.id === mangaForm.animeID);
+        if (check != null) {
+            setSelectedAnime({ ...check, firstLetter: mangaForm.name[0].toUpperCase() });
+        }
+    }, [animeListService])
 
     const loadData = async () => {
         await loadMangaInfo();
+        await loadAnime();
         await loadCategories();
         await loadMangaEpisodes();
         setLoading(false);
+    }
+    const loadAnime = async () => {
+        await getAnimes().then((res) => {
+            setAnimeList(res.data.list);
+        }).catch((er) => {
+            console.log(er);
+        })
     }
     const loadMangaEpisodes = async () => {
         await getMangaEpisodes(id as any).then((res) => {
             setMangaEpisodeService(res.data.list);
         }).catch((er) => {
-
         })
     }
     const loadCategories = async () => {
         await getCategories()
-            .then((res) => {
-                setCategoriesService(res.data.list);
+            .then(async (res) => {
+                if (res.data.isSuccessful) {
+                    setCategoriesServiceResponse(res.data.list);
+                    await getCategoryTypes(id as any, Type.Manga).then((response) => {
+                        setSelectedCategories(response.data.list.map((item) => {
+                            if (res.data.list.length != 0) {
+                                var check = res.data.list.find((x) => x.id === item.categoryID);
+                                if (check != null) {
+                                    return check.name;
+                                }
+                            }
+                            return "";
+                        }))
+                        setSelectedCategoriesID(response.data.list.map((i) => i.categoryID as any));
+                    }).catch((er: AxiosError) => {
+                        console.log(er)
+                    })
+                }
             }).catch((er) => {
                 console.log(er)
             });
+
     }
     const loadMangaInfo = async () => {
         await getMangaByID(id as any).then((res) => {
@@ -104,12 +142,19 @@ export default function EditManga() {
         }
     }
     const updateButon = async () => {
-        await putManga(mangaForm)
-            .then((res) => {
-                console.log(res.data);
-            }).catch((er) => {
-                console.log(er);
-            });
+        if (selectedAnime != null) {
+            await putManga({ ...mangaForm, animeID: selectedAnime.id });
+            await putCategoryType(convertCategoryType());
+            window.location.reload();
+        }
+
+    }
+    const convertCategoryType = () => {
+        var newArray = Array<CategoryType>();
+        selectedCategoriesID.map((item) => {
+            newArray.push({ categoryID: item, type: Type.Manga, contentID: id as any } as CategoryType);
+        })
+        return newArray;
     }
     const isSelected = (name: string) => selected.indexOf(name) !== -1;
     const emptyRows =
@@ -194,6 +239,18 @@ export default function EditManga() {
         }) as Array<MangaEpisodes>;
         return newData;
     }
+    const animeList = animeListService.map((option) => {
+        const firstLetter = option.animeName[0].toUpperCase();
+        return {
+            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
+            ...option,
+        };
+    });
+    const defaultAnimeProps = {
+        options: animeListService,
+        getOptionLabel: (option: Anime) => option.animeName,
+    };
+
     return (
         <Loading loading={loading}>
             <Grid container sx={{ padding: "10px" }}>
@@ -227,8 +284,27 @@ export default function EditManga() {
                                 <Typography>Manga Bilgileri</Typography>
                             </AccordionSummary>
                             <AccordionDetails>
-                                <Paper sx={{ width: '100%', '& .MuiTextField-root': { mt: 2 } }}>
+                                <Box sx={{ width: '100%', '& .MuiTextField-root': { mt: 2 } }}>
                                     <div style={{ padding: 10 }}>
+                                        <Grid sx={{ marginTop: '10px' }} item sm={12} md={12} xs={12}>
+                                            <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
+                                                <Autocomplete
+                                                    {...defaultAnimeProps}
+                                                    value={selectedAnime}
+                                                    onChange={(event: any, newValue: Anime | null) => {
+                                                        if (newValue != null) {
+                                                            setSelectedAnime(newValue as any)
+                                                        }
+                                                    }}
+                                                    isOptionEqualToValue={(option, value) => option.animeName === value.animeName}
+                                                    id="grouped-demo"
+                                                    options={animeList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
+                                                    groupBy={(option) => option.firstLetter}
+                                                    getOptionLabel={(option) => option.animeName}
+                                                    renderInput={(params) => <TextField {...params} label="Anime" />}
+                                                />
+                                            </FormControl>
+                                        </Grid>
                                         <Box
                                             sx={{
                                                 maxWidth: '100%',
@@ -269,8 +345,8 @@ export default function EditManga() {
                                                     MenuProps={MenuProps}
                                                 >
                                                     {
-                                                        categoriesService != null && categoriesService.length != 0 &&
-                                                        categoriesService.map((item, index) => {
+                                                        categoriesServiceResponse != null && categoriesServiceResponse.length != 0 &&
+                                                        categoriesServiceResponse.map((item, index) => {
                                                             return <MenuItem onClick={() => handleSelectedCategoriesID(item.id != null ? item.id : 0)} key={item.id} value={item.name}>
                                                                 <Checkbox checked={selectedCategories.indexOf(item.name) > -1} />
                                                                 <ListItemText primary={item.name} />
@@ -315,7 +391,7 @@ export default function EditManga() {
                                             </Button>
                                         </Grid>
                                     </div>
-                                </Paper>
+                                </Box>
                             </AccordionDetails>
                         </Accordion>
                     </Grid>
@@ -429,12 +505,7 @@ export default function EditManga() {
                 yesButon={
                     <Button onClick={async () => {
                         setMangaEpisodeService(mangaEpisodeService.filter((item) => item.id !== parseInt(selected[0])))
-                        await deleteMangaEpisode(selected[0] as any)
-                            .then((res) => {
-
-                            }).catch((er) => {
-
-                            })
+                        await deleteMangaEpisode(selected[0] as any);
                         setSelected([]);
                         setMangaEpisodeDelete(false);
                         setEditDialog(false);

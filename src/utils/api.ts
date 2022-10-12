@@ -2,14 +2,17 @@
 
 import axios from "axios"
 import {
-    Anime, AnimeEpisodes, AnimeSeason, AnimeSeasonMusic, Categories, CategoryType,
-    Episodes, Manga, MangaEpisodeContent, MangaEpisodes, ReportModels, RoleType, Rosette, RosetteContent,
+    Anime, AnimeEpisodes, AnimeSeason, AnimeSeasonMusic, Announcement, Categories, CategoryType,
+    Contact,
+    ContactSubject,
+    Episodes, FanArt, FanArtModels, HomeSlider, Manga, MangaEpisodeContent, MangaEpisodes, ReportModels, RoleType, Rosette, RosetteContent,
     RosetteModels,
+    SiteDescription,
     SocialMediaAccount, Type, UserModel, Users
 } from "../types/Entites";
 import { AnimeForm } from "../types/EntitesForm";
 import ServiceResponse from "../types/ServiceResponse";
-export const baseUrl = "http://192.168.2.175:37323";
+export const baseUrl = "http://192.168.2.100:37323";
 export default function api() {
     const userLocal = localStorage.getItem('user');
     var user: UserModel = {} as UserModel;
@@ -54,6 +57,9 @@ export const putIsBanned = async (userID: number) => {
 export const putRole = async (role: RoleType) => {
     return await api().put<ServiceResponse<Users>>("/updateRole/" + role);
 }
+export const getSearchDetailsUser = async (text: string) => {
+    return await api().get<ServiceResponse<Users>>("/getSearchDetailsUser/" + text);
+}
 //Anime
 export const getPaginatedAnime = async (pageNo: number, showCount: number) => {
     return await api().get<ServiceResponse<Anime>>("/getPaginatedAnime/" + pageNo + "/" + showCount);
@@ -91,6 +97,9 @@ export const deleteAnimes = async (animes: Array<number>) => {
 }
 export const getAnimes = async () => {
     return await api().get<ServiceResponse<Anime>>("/getAnimes");
+}
+export const getSearchAnimes = async (text: string) => {
+    return await api().get<ServiceResponse<Anime>>("/getSearchAnime/" + text);
 }
 //Anime Season
 export const getAnimeSeasonsByAnimeID = async (animeID: number) => {
@@ -238,15 +247,21 @@ export const postCategoryType = async (categoryType: Array<CategoryType>) => {
 export const getCategoryTypes = async (contentID: number, type: Type) => {
     return await api().get<ServiceResponse<CategoryType>>("/getCategoryType/" + contentID + "/" + type);
 }
-
+export const putCategoryType = async (categoryType: Array<CategoryType>) => {
+    return await api().post<ServiceResponse<CategoryType>>("/updateCategoryType", categoryType, {
+        headers: {
+            'content-type': 'application/json'
+        }
+    })
+}
 //Manga
 export const postManga = async (manga: Manga) => {
     var form = new FormData();
-    return await api().post<ServiceResponse<Manga>>("/addManga?Name=" + manga.name + "&Description=" + manga.description + "&Arrangement=" + manga.description + "&AgeLimit=" + manga.ageLimit + "&Status=" + manga.status, form, { headers: { 'content-type': 'multipart/form-data' } });
+    return await api().post<ServiceResponse<Manga>>("/addManga?AnimeID=" + manga.animeID + "&Name=" + manga.name + "&Description=" + manga.description + "&Arrangement=" + manga.description + "&AgeLimit=" + manga.ageLimit + "&Status=" + manga.status, form, { headers: { 'content-type': 'multipart/form-data' } });
 }
 export const putManga = async (manga: Manga) => {
     var form = new FormData();
-    return await api().put<ServiceResponse<Manga>>("/updateManga?ID=" + manga.id + "&Name=" + manga.name + "&Description=" + manga.description + "&Arrangement=" + manga.description + "&AgeLimit=" + manga.ageLimit + "&Status=" + manga.status, form, { headers: { 'content-type': 'multipart/form-data' } });
+    return await api().put<ServiceResponse<Manga>>("/updateManga?AnimeID=" + manga.animeID + "&ID=" + manga.id + "&Name=" + manga.name + "&Description=" + manga.description + "&Arrangement=" + manga.description + "&AgeLimit=" + manga.ageLimit + "&Status=" + manga.status, form, { headers: { 'content-type': 'multipart/form-data' } });
 }
 export const getPaginatedManga = async (pageNo: number, showCount: number) => {
     return await api().get<ServiceResponse<Manga>>("/getPaginatedManga/" + pageNo + "/" + showCount);
@@ -264,6 +279,9 @@ export const deleteMangas = async (mangas: Array<number>) => {
 }
 export const getMangas = async () => {
     return await api().get<ServiceResponse<Manga>>("/getMangas");
+}
+export const getSearchDetailsMangas = async (text: string) => {
+    return await api().get<ServiceResponse<Manga>>("/getSearchDetailsMangas/" + text);
 }
 //Manga Episodes
 export const postMangaEpisodes = async (episode: MangaEpisodes) => {
@@ -342,8 +360,8 @@ export const postUserEmailVertification = async (email: string) => {
 }
 
 //Rosette 
-export const postRosette = async (rosette: Rosette) => {
-    var form = new FormData();
+export const postRosette = async (rosette: Rosette, form: FormData) => {
+
     return await api().post<ServiceResponse<Rosette>>("/addRosette?Name=" + rosette.name, form, {
         headers: {
             'content-type': 'multipart/form-data'
@@ -352,7 +370,7 @@ export const postRosette = async (rosette: Rosette) => {
 }
 export const putRosette = async (rosette: Rosette) => {
     var form = new FormData();
-    return await api().post<ServiceResponse<Rosette>>("/updateRosette?ID=" + rosette.id + "&Name=" + rosette.name, form, {
+    return await api().put<ServiceResponse<Rosette>>("/updateRosette?ID=" + rosette.id + "&Name=" + rosette.name, form, {
         headers: {
             'content-type': 'multipart/form-data'
         }
@@ -390,4 +408,70 @@ export const putRosetteContent = async (rosetteContents: Array<RosetteContent>, 
 
 export const getDashboardReport = async () => {
     return await api().get<ServiceResponse<ReportModels>>("/getDashboardReport");
+}
+//Contact
+export const getContacts = async (pageNo: number, showCount: number) => {
+    return await api().get<ServiceResponse<Contact>>("/getContacts/" + pageNo + "/" + showCount);
+}
+export const deleteContact = async (id: number) => {
+    return await api().delete<ServiceResponse<Contact>>("/deleteContact/" + id);
+}
+
+//Contact Subject
+export const postContactSubject = async (entity: ContactSubject) => {
+    return await api().post<ServiceResponse<ContactSubject>>("/addContactSubject", entity);
+}
+export const putContactSubject = async (entity: ContactSubject) => {
+    return await api().put<ServiceResponse<ContactSubject>>("/updateContactSubject", entity);
+}
+export const getContactSubjects = async () => {
+    return await api().get<ServiceResponse<ContactSubject>>("/getContactSubjects");
+}
+export const deleteContactSubject = async (id: number) => {
+    return await api().delete<ServiceResponse<ContactSubject>>("/deleteContactSubject/" + id);
+}
+
+//Home Slider
+export const getHomeSliders = async () => {
+    return await api().get<ServiceResponse<HomeSlider>>("/getHomeSliders");
+}
+export const getHomeSlider = async (id: number) => {
+    return await api().get<ServiceResponse<HomeSlider>>("/getHomeSlider/" + id);
+}
+export const postHomeSlider = async (form: FormData) => {
+    return await api().post<ServiceResponse<HomeSlider>>("/addHomeSlider", form);
+}
+export const putHomeSlider = async (form: FormData) => {
+    return await api().put<ServiceResponse<HomeSlider>>("/updateHomeSlider", form);
+}
+export const deleteHomeSlider = async (id: number) => {
+    return await api().delete("/deleteHomeSlider/" + id);
+}
+// Site Description and Announcments
+export const getAnnouncements = async () => {
+    return await api().get<ServiceResponse<Announcement>>("/getAnnouncements");
+}
+export const putAnnouncement = async (entity: Announcement) => {
+    return await api().put<ServiceResponse<Announcement>>("/updateAnnouncement", entity);
+}
+export const getSiteDescriptions = async () => {
+    return await api().get<ServiceResponse<SiteDescription>>("/getSiteDescriptions");
+}
+export const putSiteDescription = async (entity: SiteDescription) => {
+    return await api().put<ServiceResponse<SiteDescription>>("/updateSiteDescription", entity);
+}
+
+//Fan art
+export const postFanArt = async (entity: FanArt, formData: FormData) => {
+    return await api().post("/addFanArt?UserID=" + entity.userID + "&ContentID=" + entity.contentID + "&Description=" + entity.description + "&Type=" + entity.type, formData, {
+        headers: {
+            'content-type': 'multiform/form-data'
+        }
+    });
+}
+export const getPaginatedFanArtNoType = async (pageNo: number, showCount: number) => {
+    return await api().get<ServiceResponse<FanArtModels>>("/getPaginatedFanArtNoType/" + pageNo + "/" + showCount)
+}
+export const deleteFanArt = async (id: number) => {
+    return await api().delete<ServiceResponse<FanArt>>("/deleteFanArt/" + id);
 }
