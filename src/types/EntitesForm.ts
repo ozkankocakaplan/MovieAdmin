@@ -5,6 +5,7 @@ export interface AnimeForm {
     animeName: string;
     animeDescription: string;
     malRating: string;
+    siteRating:string;
     ageLimit: string;
     seasonCount: number;
     showTime: string;

@@ -9,12 +9,9 @@ interface IDeleteDialogProps {
     noButon?: any
 }
 export default function DeleteDialog(props: IDeleteDialogProps) {
-    const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-
     return (
         <Dialog
-            fullScreen={fullScreen}
+            fullWidth
             open={props.open}
             onClose={props.handleClose}
             aria-labelledby="responsive-dialog-title"

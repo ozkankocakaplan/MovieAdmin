@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { Accordion, AccordionDetails, AccordionSummary, alpha, Autocomplete, Box, Button, Checkbox, Drawer, FormControl, Grid, IconButton, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TableBody, TableCell, TableRow, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router';
 import Loading from '../../components/Loading';
-import { Anime, Categories, CategoryType, Manga, MangaEpisodeContent, MangaEpisodes, Status, Type } from '../../types/Entites';
-import { deleteManga, deleteMangaEpisode, deleteMangaEpisodeContent, deleteMangaEpisodes, getAnimes, getCategories, getCategoryTypes, getMangaByID, getMangaEpisode, getMangaEpisodeContent, getMangaEpisodeContents, getMangaEpisodes, postMangaContentEpisode, postMangaEpisodes, putCategoryType, putManga, putMangaContentEpisode, putMangaEpisodes } from '../../utils/api';
+import { Anime, Categories, CategoryType, Manga, MangaEpisodeContent, MangaEpisodes, MangaImages, Status, Type } from '../../types/Entites';
+import { baseUrl, deleteManga, deleteMangaEpisode, deleteMangaEpisodeContent, deleteMangaEpisodes, getAnimes, getCategories, getCategoryTypes, getMangaByID, getMangaEpisode, getMangaEpisodeContent, getMangaEpisodeContents, getMangaEpisodes, getMangaImageList, postMangaContentEpisode, postMangaEpisodes, putCategoryType, putManga, putMangaContentEpisode, putMangaEpisodes, putMangaImage } from '../../utils/api';
 import DataTable, { EnhancedTableToolbarProps } from '../../components/DataTable';
 import { Order } from '../../components/TableHelper';
 import { Add, Delete, Edit, PhotoCamera } from '@mui/icons-material';
@@ -12,6 +12,7 @@ import { GridExpandMoreIcon } from '@mui/x-data-grid';
 import FullDialog from '../../components/FullDialog';
 import DeleteDialog from '../../components/DeleteDialog';
 import { AxiosError } from 'axios';
+import MyDropzone from '../../components/MyDropzone';
 const MenuProps = {
     PaperProps: {
         style: {
@@ -46,7 +47,7 @@ export default function EditManga() {
     const [editDialog, setEditDialog] = useState(false);
 
 
-    const [mangaForm, setMangaForm] = useState<Manga>({ name: '', description: '', arrangement: '', ageLimit: '', status: Status.Continues } as Manga);
+    const [mangaForm, setMangaForm] = useState<Manga>({ name: '', description: '', arrangement: '', ageLimit: '', status: Status.Continues, siteRating: '', malRating: '' } as Manga);
     const [mangaStatus, setMangaStatus] = useState(Status.Continues);
 
     const [mangaEpisodeService, setMangaEpisodeService] = useState<Array<MangaEpisodes>>([]);
@@ -60,6 +61,8 @@ export default function EditManga() {
     const [selectedAnime, setSelectedAnime] = useState<SelectedAnime | null>(null);
 
     const [animeListService, setAnimeList] = useState<Array<Anime>>([]);
+    const [selectedImage, setSelectedImage] = useState('');
+    const [mangaImages, setMangaImages] = useState<Array<MangaImages>>([]);
 
     useEffect(() => {
         loadData();
@@ -75,6 +78,7 @@ export default function EditManga() {
         await loadMangaInfo();
         await loadAnime();
         await loadCategories();
+        await loadMangaImages();
         await loadMangaEpisodes();
         setLoading(false);
     }
@@ -120,6 +124,7 @@ export default function EditManga() {
         await getMangaByID(id as any).then((res) => {
             if (res.data.isSuccessful && res.data.entity != null) {
                 setMangaForm(res.data.entity as Manga);
+                setSelectedImage(baseUrl + res.data.entity.image);
             }
             else {
                 navigate("/dashboard")
@@ -156,6 +161,14 @@ export default function EditManga() {
         })
         return newArray;
     }
+    const loadMangaImages = async () => {
+        await getMangaImageList(id as any).then((res) => {
+            setMangaImages(res.data.list);
+        }).catch((er) => {
+            console.log(er);
+        })
+    }
+
     const isSelected = (name: string) => selected.indexOf(name) !== -1;
     const emptyRows =
         page > 0 ? Math.max(0, (1 + page) * rowsPerPage - mangaEpisodeService.length) : 0;
@@ -239,17 +252,14 @@ export default function EditManga() {
         }) as Array<MangaEpisodes>;
         return newData;
     }
-    const animeList = animeListService.map((option) => {
-        const firstLetter = option.animeName[0].toUpperCase();
-        return {
-            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
-            ...option,
-        };
-    });
-    const defaultAnimeProps = {
-        options: animeListService,
-        getOptionLabel: (option: Anime) => option.animeName,
-    };
+    // const animeList = animeListService.map((option) => {
+    //     const firstLetter = option.animeName[0].toUpperCase();
+    //     return {
+    //         firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
+    //         ...option,
+    //     };
+    // });
+   
 
     return (
         <Loading loading={loading}>
@@ -274,6 +284,45 @@ export default function EditManga() {
                     </Toolbar>
                 </Paper>
                 <Grid container>
+                    <div style={{ marginBottom: '20px', justifyContent: 'center', display: 'flex', flex: 1 }}>
+                        <Grid item sx={{ marginTop: '20px', justifyContent: 'center', alignItems: 'center', display: 'flex' }} sm={12} md={12} xs={12}>
+                            {selectedImage.length === 0 && <IconButton color="primary" aria-label="upload picture" component="label">
+                                <input onChange={async (e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                        var form = new FormData();
+                                        form.append("mangaImg", e.target.files[0] as any);
+                                        setSelectedImage(URL.createObjectURL(e.target.files[0]));
+                                        await putMangaImage(form, id as any);
+                                        window.location.reload();
+                                    }
+                                }}
+                                    hidden accept="image/*" type="file" />
+                                <PhotoCamera />
+                            </IconButton>}
+                            {selectedImage.length !== 0 && <img src={selectedImage} style={{ height: '200px', width: '150px' }} />}
+                            {selectedImage.length !== 0 && <IconButton onClick={() => setSelectedImage('')} sx={{ position: 'relative', marginTop: '-180px', marginLeft: '0px' }}>
+                                <Delete />
+                            </IconButton>}
+                        </Grid>
+                    </div>
+                    <Grid item xs={12} md={12} sm={12} sx={{ marginBottom: '20px' }}>
+                        <Accordion>
+                            <AccordionSummary
+                                expandIcon={<GridExpandMoreIcon />}
+                                aria-controls="panel1a-content"
+                                id="panel1a-header"
+                            >
+                                <Typography>Manga Görselleri</Typography>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                                <Grid container spacing={4}>
+                                    <Grid item xs={12} md={12} sm={12} >
+                                        <MyDropzone data={mangaImages} mangaID={id as any} />
+                                    </Grid>
+                                </Grid>
+                            </AccordionDetails>
+                        </Accordion>
+                    </Grid>
                     <Grid item xs={12} md={12} sm={12} >
                         <Accordion>
                             <AccordionSummary
@@ -289,7 +338,7 @@ export default function EditManga() {
                                         <Grid sx={{ marginTop: '10px' }} item sm={12} md={12} xs={12}>
                                             <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
                                                 <Autocomplete
-                                                    {...defaultAnimeProps}
+                                                   
                                                     value={selectedAnime}
                                                     onChange={(event: any, newValue: Anime | null) => {
                                                         if (newValue != null) {
@@ -298,8 +347,8 @@ export default function EditManga() {
                                                     }}
                                                     isOptionEqualToValue={(option, value) => option.animeName === value.animeName}
                                                     id="grouped-demo"
-                                                    options={animeList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
-                                                    groupBy={(option) => option.firstLetter}
+                                                    options={animeListService}
+                                                  
                                                     getOptionLabel={(option) => option.animeName}
                                                     renderInput={(params) => <TextField {...params} label="Anime" />}
                                                 />
@@ -384,6 +433,24 @@ export default function EditManga() {
                                                 label="Yaş Sınırı"
                                                 fullWidth
                                             ></TextField>
+                                        </Grid>
+                                        <Grid container spacing={2} sx={{ '& .MuiGrid-item': { paddingTop: 0 } }}>
+                                            <Grid item sm={6} md={6} xs={12}>
+                                                <TextField
+                                                    value={mangaForm.siteRating}
+                                                    onChange={(e) => setMangaForm({ ...mangaForm, siteRating: e.target.value })}
+                                                    label="Site Rating"
+                                                    fullWidth
+                                                ></TextField>
+                                            </Grid>
+                                            <Grid item sm={6} md={6} xs={12}>
+                                                <TextField
+                                                    value={mangaForm.malRating}
+                                                    onChange={(e) => setMangaForm({ ...mangaForm, malRating: e.target.value })}
+                                                    label="Mal Rating"
+                                                    fullWidth
+                                                ></TextField>
+                                            </Grid>
                                         </Grid>
                                         <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '10px' }} >
                                             <Button onClick={updateButon} variant='contained' fullWidth>

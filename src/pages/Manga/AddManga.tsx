@@ -23,7 +23,7 @@ export default function AddManga() {
 
     const [animeListService, setAnimeList] = useState<Array<Anime>>([]);
 
-    const [mangaForm, setMangaForm] = useState<Manga>({ animeID: 0, name: '', description: '', arrangement: '', ageLimit: '', status: Status.Continues } as Manga);
+    const [mangaForm, setMangaForm] = useState<Manga>({ animeID: 0, name: '', description: '', arrangement: '', ageLimit: '', status: Status.Continues, siteRating: '', malRating: '' } as Manga);
     const [mangaStatus, setMangaStatus] = useState(Status.Continues);
 
     useEffect(() => {
@@ -216,6 +216,24 @@ export default function AddManga() {
                                         label="Yaş Sınırı"
                                         fullWidth
                                     ></TextField>
+                                </Grid>
+                                <Grid container spacing={2} sx={{ '& .MuiGrid-item': { paddingTop: 0 } }}>
+                                    <Grid item sm={6} md={6} xs={12}>
+                                        <TextField
+                                            value={mangaForm.siteRating}
+                                            onChange={(e) => setMangaForm({ ...mangaForm, siteRating: e.target.value })}
+                                            label="Site Rating"
+                                            fullWidth
+                                        ></TextField>
+                                    </Grid>
+                                    <Grid item sm={6} md={6} xs={12}>
+                                        <TextField
+                                            value={mangaForm.malRating}
+                                            onChange={(e) => setMangaForm({ ...mangaForm, malRating: e.target.value })}
+                                            label="Mal Rating"
+                                            fullWidth
+                                        ></TextField>
+                                    </Grid>
                                 </Grid>
                             </div>
                         </Paper>

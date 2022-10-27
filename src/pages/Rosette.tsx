@@ -47,7 +47,6 @@ export default function Rosette() {
     const loadAnimeAndManga = async () => {
         await getMangas().then((res) => {
             setMangaService(res.data.list);
-            console.log(res.data.list);
         }).catch((er) => {
 
         })
@@ -265,7 +264,7 @@ export const AddRosetteDrawer = (props: {
     animes: Array<Anime>,
     mangas: Array<Manga>
 }) => {
-
+    console.log(props);
     const [rosetteForm, setRosetteForm] = useState<Rosettes>({ name: '' } as Rosettes);
     const [selectedImage, setSelectedImage] = useState('');
     const [type, setType] = useState<number>(0);
@@ -331,29 +330,6 @@ export const AddRosetteDrawer = (props: {
             });
         setEpisodeLoading(false);
     }
-
-    const animeList = props.animes.map((option) => {
-        const firstLetter = option.animeName[0].toUpperCase();
-        return {
-            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
-            ...option,
-        };
-    });
-    const mangaList = props.mangas.map((option) => {
-        const firstLetter = option.name[0].toUpperCase();
-        return {
-            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
-            ...option,
-        };
-    });
-    const defaultAnimeProps = {
-        options: props.animes,
-        getOptionLabel: (option: Anime) => option.animeName,
-    };
-    const defaultMangaProps = {
-        options: props.mangas,
-        getOptionLabel: (option: Manga) => option.name,
-    };
     const saveButon = async () => {
         await postRosette(rosetteForm, formData)
             .then(async (res) => {
@@ -424,23 +400,22 @@ export const AddRosetteDrawer = (props: {
                         <Grid sx={{ marginTop: '10px' }} item sm={12} md={12} xs={12}>
                             <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
                                 {type === 1 ? <Autocomplete
-                                    {...defaultMangaProps}
+
                                     value={selectedManga}
                                     onChange={(event: any, newValue: Manga | null) => {
                                         if (newValue != null) {
                                             setSelectedManga(newValue as any)
                                         }
                                     }}
+                                    options={props.mangas}
                                     getOptionLabel={(option) => option.name}
                                     id="grouped-demo"
                                     isOptionEqualToValue={(option, value) => option.name === value.name}
-                                    options={mangaList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
-                                    groupBy={(option) => option.firstLetter}
                                     renderInput={(params) => <TextField {...params} label="Manga" />}
                                 />
                                     :
                                     <Autocomplete
-                                        {...defaultAnimeProps}
+                                        options={props.animes}
                                         value={selectedAnime}
                                         onChange={(event: any, newValue: Anime | null) => {
                                             if (newValue != null) {
@@ -449,8 +424,7 @@ export const AddRosetteDrawer = (props: {
                                         }}
                                         isOptionEqualToValue={(option, value) => option.animeName === value.animeName}
                                         id="grouped-demo"
-                                        options={animeList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
-                                        groupBy={(option) => option.firstLetter}
+
                                         getOptionLabel={(option) => option.animeName}
                                         renderInput={(params) => <TextField {...params} label="Anime" />}
                                     />
@@ -605,23 +579,6 @@ export const EditRosetteDrawer = (props: {
             });
 
     }
-
-
-
-    const animeList = props.animes.map((option) => {
-        const firstLetter = option.animeName[0].toUpperCase();
-        return {
-            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
-            ...option,
-        };
-    });
-    const mangaList = props.mangas.map((option) => {
-        const firstLetter = option.name[0].toUpperCase();
-        return {
-            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
-            ...option,
-        };
-    });
     const defaultAnimeProps = {
         options: props.animes,
         getOptionLabel: (option: Anime) => option.animeName,
@@ -725,8 +682,6 @@ export const EditRosetteDrawer = (props: {
                                     }}
                                     id="grouped-demo"
                                     isOptionEqualToValue={(option, value) => option.name === value.name}
-                                    options={mangaList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
-                                    groupBy={(option) => option.firstLetter}
                                     getOptionLabel={(option) => option.name}
                                     renderInput={(params) => <TextField {...params} label="Manga" />}
                                 />
@@ -741,8 +696,6 @@ export const EditRosetteDrawer = (props: {
                                         }}
                                         isOptionEqualToValue={(option, value) => option.animeName === value.animeName}
                                         id="grouped-demo"
-                                        options={animeList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
-                                        groupBy={(option) => option.firstLetter}
                                         getOptionLabel={(option) => option.animeName}
                                         renderInput={(params) => <TextField {...params} label="Anime" />}
                                     />

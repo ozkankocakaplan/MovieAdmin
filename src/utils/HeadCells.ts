@@ -4,8 +4,8 @@ import { Anime, AnimeEpisodes, AnimeSeasonMusic, Categories, Contact, ContactSub
 export const animeCells: HeadCell<Anime>[] = [
     {
         id: 0,
-        align: 'center',
-        disablePadding: true,
+        align: 'left',
+        disablePadding: false,
         label: 'Resim',
     },
     {
@@ -17,13 +17,13 @@ export const animeCells: HeadCell<Anime>[] = [
     {
         id: 3,
         align: 'left',
-        disablePadding: false,
+        disablePadding: true,
         label: 'MAL Rating',
     },
     {
         id: 4,
         align: 'left',
-        disablePadding: false,
+        disablePadding: true,
         label: 'Yaş Sınırı',
     },
     {
@@ -32,16 +32,16 @@ export const animeCells: HeadCell<Anime>[] = [
         disablePadding: true,
         label: 'Sezon Sayısı',
     },
-    {
-        id: 6,
-        align: 'center',
-        disablePadding: false,
-        label: 'İzleneme ve Beğeni',
-    },
+    // {
+    //     id: 6,
+    //     align: 'center',
+    //     disablePadding: false,
+    //     label: 'İzleneme ve Beğeni',
+    // },
     {
         id: 7,
         align: 'left',
-        disablePadding: false,
+        disablePadding: true,
         label: 'Durumu',
     }
 ];
@@ -180,6 +180,32 @@ export const contentComplaintCells: HeadCell<ContentComplaint>[] = [
         disablePadding: true,
         label: 'İçerik Tipi',
     },
+];
+export const complaintCells: HeadCell<ContentComplaint>[] = [
+    {
+        id: 0,
+        align: 'left',
+        disablePadding: true,
+        label: 'Şikayet Eden',
+    },
+    {
+        id: 1,
+        align: 'left',
+        disablePadding: true,
+        label: 'Şikayet Edilen',
+    },
+    {
+        id: 2,
+        align: 'left',
+        disablePadding: true,
+        label: 'Açıklama',
+    },
+    {
+        id: 3,
+        align: 'left',
+        disablePadding: true,
+        label: 'Tarih',
+    }
 ];
 export const animeEpisodesCells: HeadCell<AnimeEpisodes>[] = [
     {

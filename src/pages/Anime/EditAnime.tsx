@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import dayjs, { Dayjs } from 'dayjs';
 import Stack from '@mui/material/Stack';
 
 
 
-import { Add, Delete, Edit } from '@mui/icons-material'
+import { Add, Delete, Edit, PhotoCamera } from '@mui/icons-material'
 import { Accordion, AccordionDetails, AccordionSummary, alpha, Box, Button, Checkbox, Drawer, FormControl, Grid, IconButton, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TableBody, TableCell, TableRow, TextField, Toolbar, Tooltip, Typography } from '@mui/material'
-import { deleteAnime, deleteAnimeEpisode, getAnimeByID, getAnimeEpisodeContent, getAnimeEpisodeContentByEpisodeID, getAnimeEpisodesByID, getAnimeSeasonsByAnimeID, getCategories, getCategoryTypes, postAnimeEpisode, postAnimeEpisodeContent, postAnimeSeason, putAnime, putAnimeEpisode, putAnimeEpisodeContent, putCategoryType } from '../../utils/api'
-import { Anime, AnimeEpisodes, AnimeSeason, Categories, CategoryType, Episodes, Status, Type, VideoType } from '../../types/Entites';
+import { baseUrl, deleteAnime, deleteAnimeEpisode, getAnimeByID, getAnimeEpisodeContent, getAnimeEpisodeContentByEpisodeID, getAnimeEpisodesByID, getAnimeImageList, getAnimeSeasonsByAnimeID, getCategories, getCategoryTypes, postAnimeEpisode, postAnimeEpisodeContent, postAnimeSeason, putAnime, putAnimeEpisode, putAnimeEpisodeContent, putAnimeImage, putCategoryType } from '../../utils/api'
+import { Anime, AnimeEpisodes, AnimeImages, AnimeSeason, Categories, CategoryType, Episodes, Status, Type, VideoType } from '../../types/Entites';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
@@ -22,6 +22,8 @@ import { getComparator, Order, stableSort } from '../../components/TableHelper';
 import { episodesCells } from '../../utils/HeadCells';
 import { useNavigate, useParams } from 'react-router';
 import { AxiosError } from 'axios';
+import { useDropzone } from 'react-dropzone';
+import MyDropzone from '../../components/MyDropzone';
 
 
 
@@ -48,7 +50,9 @@ export default function EditAnime() {
   const [animeStatus, setAnimeStatus] = useState<Status>(Status.Continues);
   const [firstShowDate, setFirstShowDate] = useState<Dayjs | null>(dayjs(new Date()));
 
-  const [animeForm, setAnimeForm] = useState<Anime>({ animeName: '', animeDescription: '', malRating: '', ageLimit: '', seasonCount: 1, showTime: firstShowDate?.toString(), arrangement: 'a', status: animeStatus, videoType: contentType } as Anime);
+  const [animeImages, setAnimeImages] = useState<Array<AnimeImages>>([]);
+
+  const [animeForm, setAnimeForm] = useState<Anime>({ animeName: '', animeDescription: '', malRating: '', ageLimit: '', seasonCount: 1, showTime: firstShowDate?.toString(), siteRating: '', status: animeStatus, videoType: contentType } as Anime);
   const [animeSeasonServiceResponse, setAnimeSeasonServiceResponse] = useState<Array<AnimeSeason>>([]);
 
   const [animeEpisodeForm, setAnimeEpisodeForm] = useState<AnimeEpisodes>({ episodeDescription: '', episodeName: '' } as AnimeEpisodes);
@@ -61,6 +65,8 @@ export default function EditAnime() {
   const [selectedEpisodeID, setSelectedEpisodeID] = useState(0);
 
   const [seasonAddDialog, setSeasonAddDialog] = useState(false);
+
+  const [selectedImage, setSelectedImage] = useState('');
 
   useEffect(() => {
     loadData();
@@ -77,6 +83,7 @@ export default function EditAnime() {
     await loadCategories();
     await loadAnimeInfo();
     await loadAnimeSeasons();
+    await loadAnimeImages();
     setLoading(false);
   }
   const loadAnimeEpisode = async () => {
@@ -115,6 +122,7 @@ export default function EditAnime() {
   const loadAnimeInfo = async () => {
     await getAnimeByID(id as any).then((res) => {
       if (res.data.isSuccessful) {
+        setSelectedImage(baseUrl + res.data.entity.img);
         setAnimeForm(res.data.entity);
         setFirstShowDate(dayjs(res.data.entity.showTime));
         setAnimeStatus(res.data.entity.status);
@@ -132,6 +140,13 @@ export default function EditAnime() {
       .catch((er: AxiosError) => {
         console.log(er)
       })
+  }
+  const loadAnimeImages = async () => {
+    await getAnimeImageList(id as any).then((res) => {
+      setAnimeImages(res.data.list);
+    }).catch((er) => {
+      console.log(er);
+    })
   }
   const handleChange = (event: SelectChangeEvent<typeof selectedCategories>) => {
     const { target: { value }, } = event;
@@ -177,6 +192,7 @@ export default function EditAnime() {
         console.log(er)
       })
   }
+
   return (
     <Loading loading={loading}>
       <Grid container sx={{ padding: "10px" }}>
@@ -199,6 +215,45 @@ export default function EditAnime() {
             </Button>
           </Toolbar>
         </Paper>
+        <div style={{ marginBottom: '20px', justifyContent: 'center', display: 'flex', flex: 1 }}>
+          <Grid item sx={{ marginTop: '20px', justifyContent: 'center', alignItems: 'center', display: 'flex' }} sm={12} md={12} xs={12}>
+            {selectedImage.length === 0 && <IconButton color="primary" aria-label="upload picture" component="label">
+              <input onChange={async (e) => {
+                if (e.target.files && e.target.files[0]) {
+                  var form = new FormData();
+                  form.append("animeImg", e.target.files[0] as any);
+                  setSelectedImage(URL.createObjectURL(e.target.files[0]));
+                  await putAnimeImage(form, id as any);
+                  window.location.reload();
+                }
+              }}
+                hidden accept="image/*" type="file" />
+              <PhotoCamera />
+            </IconButton>}
+            {selectedImage.length !== 0 && <img src={selectedImage} style={{ height: '200px', width: '150px' }} />}
+            {selectedImage.length !== 0 && <IconButton onClick={() => setSelectedImage('')} sx={{ position: 'relative', marginTop: '-180px', marginLeft: '0px' }}>
+              <Delete />
+            </IconButton>}
+          </Grid>
+        </div>
+        <Grid item xs={12} md={12} sm={12} sx={{ marginBottom: '20px' }}>
+          <Accordion>
+            <AccordionSummary
+              expandIcon={<GridExpandMoreIcon />}
+              aria-controls="panel1a-content"
+              id="panel1a-header"
+            >
+              <Typography>Anime Görselleri</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={4}>
+                <Grid item xs={12} md={12} sm={12} >
+                  <MyDropzone data={animeImages} animeID={id as any} />
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
         <Grid item xs={12} md={12} sm={12}>
           <Accordion>
             <AccordionSummary
@@ -323,7 +378,7 @@ export default function EditAnime() {
                         </FormControl>
                       </Box>
                       <Grid container spacing={2} sx={{ '& .MuiGrid-item': { paddingTop: 0 } }}>
-                        <Grid item sm={4} md={4} xs={12} >
+                        <Grid item sm={6} md={6} xs={12} >
                           <TextField
                             value={animeForm.ageLimit}
                             onChange={(e) => setAnimeForm({ ...animeForm, ageLimit: e.target.value })}
@@ -331,7 +386,7 @@ export default function EditAnime() {
                             fullWidth
                           ></TextField>
                         </Grid>
-                        <Grid item sm={4} md={4} xs={12}>
+                        <Grid item sm={6} md={6} xs={12}>
                           <TextField
                             type={"number"}
                             value={animeForm.seasonCount}
@@ -340,7 +395,17 @@ export default function EditAnime() {
                             fullWidth
                           ></TextField>
                         </Grid>
-                        <Grid item sm={4} md={4} xs={12}>
+                      </Grid>
+                      <Grid container spacing={2} sx={{ '& .MuiGrid-item': { paddingTop: 0 } }}>
+                        <Grid item sm={6} md={6} xs={12}>
+                          <TextField
+                            value={animeForm.malRating.toString()}
+                            onChange={(e) => setAnimeForm({ ...animeForm, siteRating: e.target.value })}
+                            label="Site Rating"
+                            fullWidth
+                          ></TextField>
+                        </Grid>
+                        <Grid item sm={6} md={6} xs={12}>
                           <TextField
                             value={animeForm.malRating.toString()}
                             onChange={(e) => setAnimeForm({ ...animeForm, malRating: e.target.value })}
@@ -525,6 +590,8 @@ export default function EditAnime() {
     </Loading >
   )
 }
+
+
 
 const AddSeason = (props: { drawerState: boolean, animeID: number, handleCloseDrawer: () => void }) => {
   const [seasonForm, setSeasonForm] = useState({ seasonName: '', } as AnimeSeason);

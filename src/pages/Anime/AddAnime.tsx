@@ -29,7 +29,7 @@ export default function AddAnime() {
     const [animeStatus, setAnimeStatus] = useState<Status>(Status.Continues);
     const [firstShowDate, setFirstShowDate] = useState<Dayjs | null>(dayjs(new Date()));
 
-    const [animeForm, setAnimeForm] = useState<AnimeForm>({ animeName: '', animeDescription: '', malRating: '', ageLimit: '', seasonCount: 1, showTime: firstShowDate?.toString(), arrangement: 'a', status: animeStatus, videoType: contentType } as Anime);
+    const [animeForm, setAnimeForm] = useState<AnimeForm>({ animeName: '', animeDescription: '', malRating: '', ageLimit: '', seasonCount: 1, showTime: firstShowDate?.toString(), status: animeStatus, videoType: contentType, siteRating: '' } as Anime);
 
     const [formCheck, setFormCheck] = useState(false);
     useEffect(() => {
@@ -221,7 +221,7 @@ export default function AddAnime() {
                                     </FormControl>
                                 </Box>
                                 <Grid container spacing={2} sx={{ '& .MuiGrid-item': { paddingTop: 0 } }}>
-                                    <Grid item sm={4} md={4} xs={12} >
+                                    <Grid item sm={6} md={6} xs={12} >
                                         <TextField
                                             value={animeForm.ageLimit}
                                             onChange={(e) => setAnimeForm({ ...animeForm, ageLimit: e.target.value })}
@@ -229,7 +229,7 @@ export default function AddAnime() {
                                             fullWidth
                                         ></TextField>
                                     </Grid>
-                                    <Grid item sm={4} md={4} xs={12}>
+                                    <Grid item sm={6} md={6} xs={12}>
                                         <TextField
                                             type={"number"}
                                             value={animeForm.seasonCount}
@@ -238,9 +238,19 @@ export default function AddAnime() {
                                             fullWidth
                                         ></TextField>
                                     </Grid>
-                                    <Grid item sm={4} md={4} xs={12}>
+                                </Grid>
+                                <Grid container spacing={2} sx={{ '& .MuiGrid-item': { paddingTop: 0 } }}>
+                                    <Grid item sm={6} md={6} xs={12}>
                                         <TextField
-                                            value={animeForm.malRating.toString()}
+                                            value={animeForm.siteRating}
+                                            onChange={(e) => setAnimeForm({ ...animeForm, siteRating: e.target.value })}
+                                            label="Site Rating"
+                                            fullWidth
+                                        ></TextField>
+                                    </Grid>
+                                    <Grid item sm={6} md={6} xs={12}>
+                                        <TextField
+                                            value={animeForm.malRating}
                                             onChange={(e) => setAnimeForm({ ...animeForm, malRating: e.target.value })}
                                             label="Mal Rating"
                                             fullWidth

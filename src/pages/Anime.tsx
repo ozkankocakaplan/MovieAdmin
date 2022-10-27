@@ -9,7 +9,7 @@ import { getComparator, Order, stableSort } from '../components/TableHelper';
 import { useNavigate } from 'react-router';
 import { animeCells } from '../utils/HeadCells';
 import { Anime as Animes, Status } from '../types/Entites';
-import { deleteAnimes, getPaginatedAnime } from '../utils/api';
+import { baseUrl, deleteAnimes, getPaginatedAnime } from '../utils/api';
 import Loading from '../components/Loading';
 import { Add, Delete, Edit } from '@mui/icons-material';
 import DeleteDialog from '../components/DeleteDialog';
@@ -178,9 +178,9 @@ export default function Anime() {
                                                     >
                                                         <img
                                                             style={{ height: '60px', width: '60px' }}
-                                                            src={`https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?w=164&h=164&fit=crop&auto=format`}
-                                                            srcSet={`https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
-                                                            alt={"deneme"}
+                                                            src={baseUrl + row.img}
+                                                            srcSet={baseUrl + row.img}
+                                                            alt={row.animeName}
                                                             loading="lazy"
                                                         />
                                                     </TableCell>
@@ -192,11 +192,10 @@ export default function Anime() {
                                                     >
                                                         {row.animeName}
                                                     </TableCell>
-                                                    <TableCell >{row.malRating}</TableCell>
-                                                    <TableCell>{row.ageLimit}</TableCell>
-                                                    <TableCell align='center'>{row.seasonCount}</TableCell>
-                                                    <TableCell component="th" align='center'></TableCell>
-                                                    <TableCell>{
+                                                    <TableCell padding='none' >{row.malRating}</TableCell>
+                                                    <TableCell padding='none'>{row.ageLimit}</TableCell>
+                                                    <TableCell padding='none'>{row.seasonCount}</TableCell>
+                                                    <TableCell padding='none'>{
                                                         row.status === Status.Completed ? "Tamamlandı" : "Devam Ediyor"
                                                     }</TableCell>
                                                 </TableRow>
@@ -226,7 +225,7 @@ export default function Anime() {
                     <Button onClick={async () => {
                         await deleteAnimes(selected.map((item) => parseInt(item)))
                             .then((res) => {
-                                
+
                             }).catch((er) => {
                                 console.log(er)
                             })

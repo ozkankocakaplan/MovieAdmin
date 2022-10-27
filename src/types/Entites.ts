@@ -58,13 +58,12 @@ export interface Anime extends BaseEntity {
     animeName: string;
     animeDescription: string;
     malRating: string;
+    siteRating: string;
     ageLimit: string;
     seasonCount: number;
     showTime: string;
     status: Status;
     videoType: VideoType;
-    views: number;
-    like: number;
     arrangement: string;
     seoUrl: string;
 }
@@ -187,6 +186,8 @@ export interface Manga extends BaseEntity {
     ageLimit: string;
     status: Status;
     seoUrl: string;
+    malRating: string;
+    siteRating: string;
 }
 
 export interface MangaEpisodeContent extends BaseEntity {
@@ -312,4 +313,35 @@ export interface ReportModels {
 export interface FanArtModels extends FanArt {
     anime: Anime;
     manga: Manga;
+}
+export interface UserList extends BaseEntity {
+    userID: number;
+    listName: string;
+}
+export interface UserListContents extends BaseEntity {
+    userID: number;
+    listID: number;
+    contentID: number;
+    episodeID: number;
+    type: Type;
+    userList: UserList;
+    users: Users;
+}
+export interface UserListModels extends UserListContents {
+    anime: Anime;
+    manga: Manga;
+    animeEpisodes: AnimeEpisodes;
+    mangaEpisodes: MangaEpisodes;
+}
+export interface AnimeImages extends BaseEntity {
+    animeID: number;
+    img?: string;
+}
+export interface MangaImages extends BaseEntity {
+    mangaID: number;
+    img?: string;
+}
+export interface ComplaintListModels extends ComplaintList {
+    complainantUser: Users;
+    users: Users;
 }
