@@ -3,10 +3,10 @@ import { AxiosError } from 'axios';
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router';
 import Loading from '../../components/Loading';
-import { Anime, Categories, CategoryType, Manga, Status, Type } from '../../types/Entites';
+import { Anime, AnimeModels, Categories, CategoryType, Manga, Status, Type } from '../../types/Entites';
 import { getAnimes, getCategories, postCategoryType, postManga } from '../../utils/api';
 
-interface SelectedAnime extends Anime {
+interface SelectedAnime extends AnimeModels {
     firstLetter: string
 }
 export default function AddManga() {
@@ -21,7 +21,7 @@ export default function AddManga() {
 
     const [selectedAnime, setSelectedAnime] = useState<SelectedAnime | null>(null);
 
-    const [animeListService, setAnimeList] = useState<Array<Anime>>([]);
+    const [animeListService, setAnimeList] = useState<Array<AnimeModels>>([]);
 
     const [mangaForm, setMangaForm] = useState<Manga>({ animeID: 0, name: '', description: '', arrangement: '', ageLimit: '', status: Status.Continues, siteRating: '', malRating: '' } as Manga);
     const [mangaStatus, setMangaStatus] = useState(Status.Continues);
@@ -53,7 +53,7 @@ export default function AddManga() {
         }
     }
     const saveButon = async () => {
-        await postManga({ ...mangaForm, animeID: selectedAnime != null ? selectedAnime.id : 0 })
+        await postManga({ ...mangaForm, animeID: selectedAnime != null ? selectedAnime.anime.id : 0 })
             .then(async (res) => {
                 if (res.data.isSuccessful) {
                     var categoryTypeArray = new Array<CategoryType>();
@@ -82,7 +82,7 @@ export default function AddManga() {
         })
     }
     const animeList = animeListService.map((option) => {
-        const firstLetter = option.animeName[0].toUpperCase();
+        const firstLetter = option.anime.animeName[0].toUpperCase();
         return {
             firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
             ...option,
@@ -90,7 +90,7 @@ export default function AddManga() {
     });
     const defaultAnimeProps = {
         options: animeListService,
-        getOptionLabel: (option: Anime) => option.animeName,
+        getOptionLabel: (option: AnimeModels) => option.anime.animeName,
     };
     return (
         <Loading loading={loading}>
@@ -123,16 +123,16 @@ export default function AddManga() {
                                         <Autocomplete
                                             {...defaultAnimeProps}
                                             value={selectedAnime}
-                                            onChange={(event: any, newValue: Anime | null) => {
+                                            onChange={(event: any, newValue: AnimeModels | null) => {
                                                 if (newValue != null) {
                                                     setSelectedAnime(newValue as any)
                                                 }
                                             }}
-                                            isOptionEqualToValue={(option, value) => option.animeName === value.animeName}
+                                            isOptionEqualToValue={(option, value) => option.anime.animeName === value.anime.animeName}
                                             id="grouped-demo"
                                             options={animeList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
                                             groupBy={(option) => option.firstLetter}
-                                            getOptionLabel={(option) => option.animeName}
+                                            getOptionLabel={(option) => option.anime.animeName}
                                             renderInput={(params) => <TextField {...params} label="Anime" />}
                                         />
                                     </FormControl>

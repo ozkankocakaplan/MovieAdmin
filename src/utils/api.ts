@@ -2,12 +2,12 @@
 
 import axios from "axios"
 import {
-    Anime, AnimeEpisodes, AnimeImages, AnimeSeason, AnimeSeasonMusic, Announcement, Categories, CategoryType,
+    Anime, AnimeEpisodes, AnimeImages, AnimeModels, AnimeSeason, AnimeSeasonMusic, Announcement, Categories, CategoryType,
     ComplaintList,
     ComplaintListModels,
     Contact,
     ContactSubject,
-    Episodes, FanArt, FanArtModels, HomeSlider, Manga, MangaEpisodeContent, MangaEpisodes, MangaImages, Notification, ReportModels, RoleType, Rosette, RosetteContent,
+    Episodes, FanArt, FanArtModels, HomeSlider, Manga, MangaEpisodeContent, MangaEpisodes, MangaImages, MangaModels, Notification, ReportModels, RoleType, Rosette, RosetteContent,
     RosetteModels,
     SiteDescription,
     SocialMediaAccount, Type, UserModel, Users
@@ -98,7 +98,7 @@ export const deleteAnimes = async (animes: Array<number>) => {
     });
 }
 export const getAnimes = async () => {
-    return await api().get<ServiceResponse<Anime>>("/getAnimes");
+    return await api().get<ServiceResponse<AnimeModels>>("/getAnimes");
 }
 export const getSearchAnimes = async (text: string) => {
     return await api().get<ServiceResponse<Anime>>("/getSearchAnime/" + text);
@@ -312,7 +312,7 @@ export const deleteMangas = async (mangas: Array<number>) => {
     });
 }
 export const getMangas = async () => {
-    return await api().get<ServiceResponse<Manga>>("/getMangas");
+    return await api().get<ServiceResponse<MangaModels>>("/getMangas");
 }
 export const getSearchDetailsMangas = async (text: string) => {
     return await api().get<ServiceResponse<Manga>>("/getSearchDetailsMangas/" + text);

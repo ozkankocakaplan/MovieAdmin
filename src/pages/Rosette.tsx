@@ -8,8 +8,8 @@ import Loading from '../components/Loading'
 import ResultSnackbar, { Result } from '../components/ResultSnackbar';
 import RightDrawer from '../components/RightDrawer';
 import { getComparator, Order, stableSort } from '../components/TableHelper';
-import { Anime, AnimeEpisodes, Manga, MangaEpisodes, Rosette as Rosettes, RosetteContent, RosetteModels, Type } from '../types/Entites';
-import { baseUrl, deleteRosettes, getAnimeEpisodes, getAnimes, getFullMangaEpisodes, getMangas, getRosette, getRosetteContent, getRosettes, postRosette, postRosetteContent, putRosette, putRosetteContent, putUpdateImage } from '../utils/api';
+import { Anime, AnimeEpisodes, AnimeModels, Manga, MangaEpisodes, MangaModels, Rosette as Rosettes, RosetteContent, Type } from '../types/Entites';
+import { baseUrl, deleteRosettes, getAnimeEpisodes, getAnimes, getFullMangaEpisodes, getMangas, getRosette, getRosettes, postRosette, postRosetteContent, putRosette, putRosetteContent, putUpdateImage } from '../utils/api';
 import { rosetteCells } from '../utils/HeadCells';
 
 export default function Rosette() {
@@ -23,8 +23,8 @@ export default function Rosette() {
     const [addRosetteDrawer, setAddRosetteDrawer] = useState(false);
     const [editRosetteDrawer, setEditRosetteDrawer] = useState(false);
 
-    const [mangaService, setMangaService] = useState<Array<Manga>>([]);
-    const [animeService, setAnimeService] = useState<Array<Anime>>([]);
+    const [mangaService, setMangaService] = useState<Array<MangaModels>>([]);
+    const [animeService, setAnimeService] = useState<Array<AnimeModels>>([]);
 
     const [deleteDialog, setDeleteDialog] = useState(false);
 
@@ -238,8 +238,8 @@ export default function Rosette() {
                     </Button>
                 }
             />
-            <AddRosetteDrawer mangas={mangaService} animes={animeService} drawerState={addRosetteDrawer} openDrawer={addToggleDrawer} />
-            {editRosetteDrawer && <EditRosetteDrawer rosetteID={parseInt(selected[0])} mangas={mangaService} animes={animeService} drawerState={editRosetteDrawer} openDrawer={editToggleDrawer} />}
+            {addRosetteDrawer && <AddRosetteDrawer mangas={mangaService.map((item) => item.manga)} animes={animeService.map((y) => y.anime)} drawerState={addRosetteDrawer} openDrawer={addToggleDrawer} />}
+            {editRosetteDrawer && <EditRosetteDrawer rosetteID={parseInt(selected[0])} mangas={mangaService.map((y) => y.manga)} animes={animeService.map((item) => item.anime)} drawerState={editRosetteDrawer} openDrawer={editToggleDrawer} />}
         </Loading>
     )
 }
@@ -330,6 +330,28 @@ export const AddRosetteDrawer = (props: {
             });
         setEpisodeLoading(false);
     }
+    const animeList = props.animes.map((option) => {
+        const firstLetter = option.animeName[0].toUpperCase();
+        return {
+            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
+            ...option,
+        };
+    });
+    const mangaList = props.mangas.map((option) => {
+        const firstLetter = option.name[0].toUpperCase();
+        return {
+            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
+            ...option,
+        };
+    });
+    const defaultAnimeProps = {
+        options: props.animes,
+        getOptionLabel: (option: Anime) => option.animeName,
+    };
+    const defaultMangaProps = {
+        options: props.mangas,
+        getOptionLabel: (option: Manga) => option.name,
+    };
     const saveButon = async () => {
         await postRosette(rosetteForm, formData)
             .then(async (res) => {
@@ -400,22 +422,21 @@ export const AddRosetteDrawer = (props: {
                         <Grid sx={{ marginTop: '10px' }} item sm={12} md={12} xs={12}>
                             <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
                                 {type === 1 ? <Autocomplete
-
+                                    {...defaultMangaProps}
                                     value={selectedManga}
                                     onChange={(event: any, newValue: Manga | null) => {
                                         if (newValue != null) {
                                             setSelectedManga(newValue as any)
                                         }
                                     }}
-                                    options={props.mangas}
-                                    getOptionLabel={(option) => option.name}
                                     id="grouped-demo"
                                     isOptionEqualToValue={(option, value) => option.name === value.name}
                                     renderInput={(params) => <TextField {...params} label="Manga" />}
                                 />
                                     :
                                     <Autocomplete
-                                        options={props.animes}
+                                        {...defaultAnimeProps}
+
                                         value={selectedAnime}
                                         onChange={(event: any, newValue: Anime | null) => {
                                             if (newValue != null) {
@@ -424,8 +445,6 @@ export const AddRosetteDrawer = (props: {
                                         }}
                                         isOptionEqualToValue={(option, value) => option.animeName === value.animeName}
                                         id="grouped-demo"
-
-                                        getOptionLabel={(option) => option.animeName}
                                         renderInput={(params) => <TextField {...params} label="Anime" />}
                                     />
                                 }
@@ -596,6 +615,20 @@ export const EditRosetteDrawer = (props: {
             setSelectedEpisodesID([...selectedEpisodesID, id]);
         }
     }
+    const animeList = props.animes.map((option) => {
+        const firstLetter = option.animeName[0].toUpperCase();
+        return {
+            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
+            ...option,
+        };
+    });
+    const mangaList = props.mangas.map((option) => {
+        const firstLetter = option.name[0].toUpperCase();
+        return {
+            firstLetter: /[0-9]/.test(firstLetter) ? '0-9' : firstLetter,
+            ...option,
+        };
+    });
     const saveButon = async () => {
         await putRosette(rosetteForm)
             .then(async (res) => {
@@ -680,6 +713,8 @@ export const EditRosetteDrawer = (props: {
                                             setSelectedManga(newValue as any)
                                         }
                                     }}
+                                    options={mangaList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
+                                    groupBy={(option) => option.firstLetter}
                                     id="grouped-demo"
                                     isOptionEqualToValue={(option, value) => option.name === value.name}
                                     getOptionLabel={(option) => option.name}
@@ -694,6 +729,8 @@ export const EditRosetteDrawer = (props: {
                                                 setSelectedAnime(newValue as any)
                                             }
                                         }}
+                                        options={animeList.sort((a, b) => -b.firstLetter.localeCompare(a.firstLetter))}
+                                        groupBy={(option) => option.firstLetter}
                                         isOptionEqualToValue={(option, value) => option.animeName === value.animeName}
                                         id="grouped-demo"
                                         getOptionLabel={(option) => option.animeName}

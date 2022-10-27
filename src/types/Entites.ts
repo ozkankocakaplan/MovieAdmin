@@ -6,7 +6,8 @@ export enum Type {
     Anime = 1,
     Manga = 2,
     FanArt = 3,
-    Comment = 4
+    Comment = 4,
+    Reviews = 5
 }
 
 export enum RoleType {
@@ -83,10 +84,11 @@ export interface AnimeOfTheWeek extends BaseEntity {
     userID: number;
     description: string;
 }
-export interface AnimeRating extends BaseEntity {
+export interface Ratings extends BaseEntity {
     userID: number;
     animeID: number;
     rating: number;
+    type: Type;
 }
 export interface AnimeSeason extends BaseEntity {
     seasonName: string;
@@ -344,4 +346,42 @@ export interface MangaImages extends BaseEntity {
 export interface ComplaintListModels extends ComplaintList {
     complainantUser: Users;
     users: Users;
+}
+export interface ContentNotification extends BaseEntity {
+    userID: number;
+    contentID: number;
+    type: Type;
+    user: Users;
+}
+export interface AnimeModels {
+    anime: Anime;
+    manga: Manga;
+    like: Like;
+    animeRating: Ratings;
+    contentNotification: ContentNotification;
+    categories: CategoryType[];
+    animeSeasons: AnimeSeason[];
+    animeSeasonMusics: AnimeSeasonMusic[];
+    animeEpisodes: AnimeEpisodes[];
+    episodes: Episodes[];
+    animeLists: AnimeList[];
+    rating: number;
+    arrangement: number;
+    likeCount: number;
+    viewsCount: number;
+    animeEpisodeCount: number;
+}
+export interface MangaModels {
+    manga: Manga;
+    like: Like;
+    mangaRating: Ratings;
+    contentNotification: ContentNotification;
+    categories: CategoryType[];
+    mangaEpisodes: MangaEpisodes[];
+    mangaEpisodeContents: MangaEpisodeContent[];
+    rating: number;
+    arrangement: number;
+    likeCount: number;
+    viewsCount: number;
+    mangaEpisodeCount: number;
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Accordion, AccordionDetails, AccordionSummary, alpha, Autocomplete, Box, Button, Checkbox, Drawer, FormControl, Grid, IconButton, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TableBody, TableCell, TableRow, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router';
 import Loading from '../../components/Loading';
-import { Anime, Categories, CategoryType, Manga, MangaEpisodeContent, MangaEpisodes, MangaImages, Status, Type } from '../../types/Entites';
+import { Anime, AnimeModels, Categories, CategoryType, Manga, MangaEpisodeContent, MangaEpisodes, MangaImages, Status, Type } from '../../types/Entites';
 import { baseUrl, deleteManga, deleteMangaEpisode, deleteMangaEpisodeContent, deleteMangaEpisodes, getAnimes, getCategories, getCategoryTypes, getMangaByID, getMangaEpisode, getMangaEpisodeContent, getMangaEpisodeContents, getMangaEpisodes, getMangaImageList, postMangaContentEpisode, postMangaEpisodes, putCategoryType, putManga, putMangaContentEpisode, putMangaEpisodes, putMangaImage } from '../../utils/api';
 import DataTable, { EnhancedTableToolbarProps } from '../../components/DataTable';
 import { Order } from '../../components/TableHelper';
@@ -21,7 +21,7 @@ const MenuProps = {
         },
     },
 };
-interface SelectedAnime extends Anime {
+interface SelectedAnime extends AnimeModels {
     firstLetter: string
 }
 export default function EditManga() {
@@ -60,7 +60,7 @@ export default function EditManga() {
 
     const [selectedAnime, setSelectedAnime] = useState<SelectedAnime | null>(null);
 
-    const [animeListService, setAnimeList] = useState<Array<Anime>>([]);
+    const [animeListService, setAnimeList] = useState<Array<AnimeModels>>([]);
     const [selectedImage, setSelectedImage] = useState('');
     const [mangaImages, setMangaImages] = useState<Array<MangaImages>>([]);
 
@@ -68,7 +68,7 @@ export default function EditManga() {
         loadData();
     }, []);
     useEffect(() => {
-        var check = animeListService.find((y) => y.id === mangaForm.animeID);
+        var check = animeListService.find((y) => y.anime.id === mangaForm.animeID);
         if (check != null) {
             setSelectedAnime({ ...check, firstLetter: mangaForm.name[0].toUpperCase() });
         }
@@ -148,7 +148,7 @@ export default function EditManga() {
     }
     const updateButon = async () => {
         if (selectedAnime != null) {
-            await putManga({ ...mangaForm, animeID: selectedAnime.id });
+            await putManga({ ...mangaForm, animeID: selectedAnime.anime.id });
             await putCategoryType(convertCategoryType());
             window.location.reload();
         }
@@ -259,7 +259,7 @@ export default function EditManga() {
     //         ...option,
     //     };
     // });
-   
+
 
     return (
         <Loading loading={loading}>
@@ -338,18 +338,17 @@ export default function EditManga() {
                                         <Grid sx={{ marginTop: '10px' }} item sm={12} md={12} xs={12}>
                                             <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
                                                 <Autocomplete
-                                                   
                                                     value={selectedAnime}
-                                                    onChange={(event: any, newValue: Anime | null) => {
+                                                    onChange={(event: any, newValue: AnimeModels | null) => {
                                                         if (newValue != null) {
                                                             setSelectedAnime(newValue as any)
                                                         }
                                                     }}
-                                                    isOptionEqualToValue={(option, value) => option.animeName === value.animeName}
+                                                    isOptionEqualToValue={(option, value) => option.anime.animeName === value.anime.animeName}
                                                     id="grouped-demo"
                                                     options={animeListService}
-                                                  
-                                                    getOptionLabel={(option) => option.animeName}
+
+                                                    getOptionLabel={(option) => option.anime.animeName}
                                                     renderInput={(params) => <TextField {...params} label="Anime" />}
                                                 />
                                             </FormControl>
