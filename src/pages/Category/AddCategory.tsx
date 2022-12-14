@@ -17,14 +17,20 @@ export default function AddCategory() {
         if (categoryForm.name?.length != 0) {
             setFormCheck(false);
             await postCategory(categoryForm).then((res) => {
-                setResult({ status: true, text: "Kategori Eklendi" })
+                if (res.data.isSuccessful) {
+                    setResult({ status: true, text: "Kategori Eklendi" });
+                    setTimeout(() => {
+                        navigate("/categories");
+                    }, 700);
+                }
+                else {
+                    setResult({ status: false, text: "Kategori mevcut" })
+                }
             }).catch((er: AxiosError) => {
                 setResult({ status: false, text: er.message })
             })
             setOpen(true);
-            setTimeout(() => {
-                navigate("/categories");
-            }, 700);
+
         }
         else {
             setFormCheck(true)

@@ -21,7 +21,25 @@ import { Button } from "@mui/material";
 import { RoleType } from "../types/Entites";
 
 
-const mdTheme = createTheme();
+const mdTheme = createTheme({
+    components: {
+        MuiDrawer: {
+            styleOverrides: {
+                paper: {
+                    background: '#474747',
+                    color: '#ffffff87'
+                }
+            }
+        },
+        MuiSvgIcon: {
+            styleOverrides: {
+                root: {
+                    color: '#ffffff'
+                }
+            }
+        }
+    }
+});
 export const ProtectedLayout = () => {
     const { user } = useAuth();
     const outlet = useOutlet();
@@ -52,6 +70,7 @@ export const ProtectedLayout = () => {
                                 ...(open && { display: 'none' }),
                             }}
                         >
+
                             <Menu />
                         </IconButton>
                         <Typography
@@ -91,10 +110,7 @@ export const ProtectedLayout = () => {
                 <Box
                     component="main"
                     sx={{
-                        backgroundColor: (theme) =>
-                            theme.palette.mode === 'light'
-                                ? theme.palette.grey[100]
-                                : theme.palette.grey[900],
+                        backgroundColor: '#161616',
                         flexGrow: 1,
                         height: '100vh',
                         overflow: 'auto',

@@ -246,154 +246,145 @@ const UserDetails = (props: { openDrawer: (status: boolean) => void, drawerState
     }
     window.location.reload();
   }
-  const theme = createTheme({
-    typography: {
-      subtitle1: {
-        color: '#474747',
-        fontFamily: 'sans-serif',
-        fontWeight: '400'
-      }
-    }
-  });
   return (
     <Loading loading={loading}>
       {
         Object.keys(userModelForm).length != 0 &&
-        <ThemeProvider theme={theme}>
-          <React.Fragment>
-            <Drawer
-              sx={{ '& .MuiDrawer-paper': { top: '65px' } }}
-              anchor={'right'}
-              open={props.drawerState}
-              onClose={() => props.openDrawer(false)}
+
+        <React.Fragment>
+          <Drawer
+            sx={{ '& .MuiDrawer-paper': { top: '65px' } }}
+            anchor={'right'}
+            open={props.drawerState}
+            onClose={() => props.openDrawer(false)}
+          >
+            <Box
+              sx={{ width: 400 }}
+              role="presentation"
             >
-              <Box
-                sx={{ width: 400 }}
-                role="presentation"
-              >
-                <Grid container sx={{ padding: '15px' }}>
-                  <Grid item sm={12} md={3} xs={12}>
-                    <Avatar
-                      alt="Remy Sharp"
-                      src="/static/images/avatar/1.jpg"
-                      sx={{ width: 90, height: 90 }}
+              <Grid container sx={{ padding: '15px' }}>
+                <Grid item sm={12} md={3} xs={12}>
+                  <Avatar
+                    alt="Remy Sharp"
+                    src="/static/images/avatar/1.jpg"
+                    sx={{ width: 90, height: 90 }}
+                  />
+                </Grid>
+                <Grid item sx={{ justifyContent: 'center', alignItems: 'flex-start', display: 'flex', flex: 1, flexDirection: 'column', paddingLeft: '5px' }} sm={12} md={9} xs={12}>
+                  <Typography variant='subtitle1'>{props.selectedUser.nameSurname}</Typography>
+                  <Typography variant='subtitle1'>{props.selectedUser.email}</Typography>
+                </Grid>
+                <Grid container sx={{ marginTop: '20px' }}>
+                  <Grid item sm={12} md={12} xs={12}>
+                    <TextField
+                      sx={{ marginTop: '10px' }}
+                      size='small'
+                      disabled
+                      fullWidth
+                      id="outlined-disabled"
+                      label="Kullanıcı Adı"
+                      defaultValue={userModelForm.userName}
                     />
                   </Grid>
-                  <Grid item sx={{ justifyContent: 'center', alignItems: 'flex-start', display: 'flex', flex: 1, flexDirection: 'column', paddingLeft: '5px' }} sm={12} md={9} xs={12}>
-                    <Typography variant='subtitle1'>{props.selectedUser.nameSurname}</Typography>
-                    <Typography variant='subtitle1'>{props.selectedUser.email}</Typography>
+                  <Grid item sm={12} md={12} xs={12}>
+                    <TextField
+                      sx={{ marginTop: '20px' }}
+                      size='small'
+                      disabled
+                      fullWidth
+                      id="outlined-disabled"
+                      label="Email"
+                      defaultValue={userModelForm.email}
+                    />
                   </Grid>
-                  <Grid container sx={{ marginTop: '20px' }}>
-                    <Grid item sm={12} md={12} xs={12}>
-                      <TextField
-                        sx={{ marginTop: '10px' }}
+                  <Grid item sm={12} md={12} xs={12}>
+                    <TextField
+                      sx={{ marginTop: '20px' }}
+                      size='small'
+                      disabled
+                      fullWidth
+                      id="outlined-disabled"
+                      label="Nereden Keşfettim"
+                      defaultValue={userModelForm.discover}
+                    />
+                  </Grid>
+                  <Grid item sm={12} md={12} xs={12}>
+                    <TextField
+                      sx={{ marginTop: '20px' }}
+                      size='small'
+                      disabled
+                      fullWidth
+                      id="outlined-disabled"
+                      label="Doğum Tarihi"
+                      defaultValue={userModelForm.birthDay.substring(0, 10)}
+                    />
+                  </Grid>
+                  <Grid item sm={12} md={12} xs={12}>
+                    <TextField
+                      sx={{ marginTop: '20px' }}
+                      size='small'
+                      disabled
+                      fullWidth
+                      id="outlined-disabled"
+                      label="Cinsiyet"
+                      defaultValue={userModelForm.gender}
+                    />
+                  </Grid>
+                  <Grid item sm={12} md={12} xs={12}>
+                    <TextField
+                      sx={{ marginTop: '20px' }}
+                      size='small'
+                      disabled
+                      fullWidth
+                      id="outlined-disabled"
+                      label="Son Giriş"
+                      defaultValue={new Date(userModelForm.userLoginHistory.lastSeen).toLocaleString().substring(0, 16)}
+                    />
+                  </Grid>
+                  <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '20px' }}>
+                    <FormControl fullWidth>
+                      <InputLabel id="demo-simple-select-label">Rol</InputLabel>
+                      <Select
                         size='small'
-                        disabled
-                        fullWidth
-                        id="outlined-disabled"
-                        label="Kullanıcı Adı"
-                        defaultValue={userModelForm.userName}
-                      />
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12}>
-                      <TextField
-                        sx={{ marginTop: '20px' }}
+                        labelId="demo-simple-select-label"
+                        id="demo-simple-select"
+                        label="Rol"
+                        onChange={(e) => setRole(e.target.value as RoleType)}
+                        value={role}
+                      >
+                        <MenuItem value={RoleType.User}>Kullanıcı</MenuItem>
+                        <MenuItem value={RoleType.Moderator}>Moderatör</MenuItem>
+                        <MenuItem value={RoleType.Admin}>Yönetici</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '20px' }}>
+                    <FormControl fullWidth>
+                      <InputLabel id="demo-simple-select-label">Hesap Durumu</InputLabel>
+                      <Select
                         size='small'
-                        disabled
-                        fullWidth
-                        id="outlined-disabled"
-                        label="Email"
-                        defaultValue={userModelForm.email}
-                      />
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12}>
-                      <TextField
-                        sx={{ marginTop: '20px' }}
-                        size='small'
-                        disabled
-                        fullWidth
-                        id="outlined-disabled"
-                        label="Nereden Keşfettim"
-                        defaultValue={userModelForm.discover}
-                      />
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12}>
-                      <TextField
-                        sx={{ marginTop: '20px' }}
-                        size='small'
-                        disabled
-                        fullWidth
-                        id="outlined-disabled"
-                        label="Doğum Tarihi"
-                        defaultValue={userModelForm.birthDay.substring(0, 10)}
-                      />
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12}>
-                      <TextField
-                        sx={{ marginTop: '20px' }}
-                        size='small'
-                        disabled
-                        fullWidth
-                        id="outlined-disabled"
-                        label="Cinsiyet"
-                        defaultValue={userModelForm.gender}
-                      />
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12}>
-                      <TextField
-                        sx={{ marginTop: '20px' }}
-                        size='small'
-                        disabled
-                        fullWidth
-                        id="outlined-disabled"
-                        label="Son Giriş"
-                        defaultValue={new Date(userModelForm.userLoginHistory.lastSeen).toLocaleString().substring(0, 16)}
-                      />
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '20px' }}>
-                      <FormControl fullWidth>
-                        <InputLabel id="demo-simple-select-label">Rol</InputLabel>
-                        <Select
-                          size='small'
-                          labelId="demo-simple-select-label"
-                          id="demo-simple-select"
-                          label="Rol"
-                          onChange={(e) => setRole(e.target.value as RoleType)}
-                          value={role}
-                        >
-                          <MenuItem value={RoleType.User}>Kullanıcı</MenuItem>
-                          <MenuItem value={RoleType.Moderator}>Moderatör</MenuItem>
-                          <MenuItem value={RoleType.Admin}>Yönetici</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '20px' }}>
-                      <FormControl fullWidth>
-                        <InputLabel id="demo-simple-select-label">Hesap Durumu</InputLabel>
-                        <Select
-                          size='small'
-                          labelId="demo-simple-select-label"
-                          id="demo-simple-select"
-                          label="Hesap Durumu"
-                          onChange={(e) => setStatus(e.target.value as any)}
-                          value={status ? 1 : 0}
-                        >
-                          <MenuItem value={0}>Aktif</MenuItem>
-                          <MenuItem value={1}>Pasif</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '20px' }}>
-                      <Button onClick={saveButon} fullWidth variant='contained'>
-                        Kaydet
-                      </Button>
-                    </Grid>
+                        labelId="demo-simple-select-label"
+                        id="demo-simple-select"
+                        label="Hesap Durumu"
+                        onChange={(e) => setStatus(e.target.value as any)}
+                        value={status ? 1 : 0}
+                      >
+                        <MenuItem value={0}>Aktif</MenuItem>
+                        <MenuItem value={1}>Pasif</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '20px' }}>
+                    <Button onClick={saveButon} fullWidth variant='contained'>
+                      Kaydet
+                    </Button>
                   </Grid>
                 </Grid>
-              </Box>
-            </Drawer>
-          </React.Fragment>
-        </ThemeProvider>
+              </Grid>
+            </Box>
+          </Drawer>
+        </React.Fragment>
+
       }
     </Loading>
   );

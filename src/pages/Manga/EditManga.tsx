@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { Accordion, AccordionDetails, AccordionSummary, alpha, Autocomplete, Box, Button, Checkbox, Drawer, FormControl, Grid, IconButton, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TableBody, TableCell, TableRow, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, alpha, Autocomplete, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Drawer, FormControl, Grid, IconButton, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TableBody, TableCell, TableRow, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
 import { useNavigate, useParams } from 'react-router';
 import Loading from '../../components/Loading';
 import { Anime, AnimeModels, Categories, CategoryType, Manga, MangaEpisodeContent, MangaEpisodes, MangaImages, Status, Type } from '../../types/Entites';
-import { baseUrl, deleteManga, deleteMangaEpisode, deleteMangaEpisodeContent, deleteMangaEpisodes, getAnimes, getCategories, getCategoryTypes, getMangaByID, getMangaEpisode, getMangaEpisodeContent, getMangaEpisodeContents, getMangaEpisodes, getMangaImageList, postMangaContentEpisode, postMangaEpisodes, putCategoryType, putManga, putMangaContentEpisode, putMangaEpisodes, putMangaImage } from '../../utils/api';
+import { addAutoMangaEpisodeContents, addAutoMangaEpisodes, deleteManga, deleteMangaEpisode, deleteMangaEpisodeContent, deleteMangaEpisodeContents, deleteMangaEpisodes, getAnimes, getCategories, getCategoryTypes, getMangaByID, getMangaEpisode, getMangaEpisodeContent, getMangaEpisodeContents, getMangaEpisodes, getMangaImageList, postAnimeImages, postMangaContentEpisode, postMangaEpisodes, postMangaImages, putCategoryType, putManga, putMangaContentEpisode, putMangaEpisodes, putMangaImage } from '../../utils/api';
 import DataTable, { EnhancedTableToolbarProps } from '../../components/DataTable';
 import { Order } from '../../components/TableHelper';
 import { Add, Delete, Edit, PhotoCamera } from '@mui/icons-material';
@@ -13,6 +13,17 @@ import FullDialog from '../../components/FullDialog';
 import DeleteDialog from '../../components/DeleteDialog';
 import { AxiosError } from 'axios';
 import MyDropzone from '../../components/MyDropzone';
+import { useDispatch, useSelector } from 'react-redux';
+import { setUploadImage, setAnimeFiles } from '../../store/features/mainReducers';
+import { RootState } from '../../store/index';
+import ResultSnackbar, { Result } from '../../components/ResultSnackbar';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
+
+
 const MenuProps = {
     PaperProps: {
         style: {
@@ -38,8 +49,9 @@ export default function EditManga() {
 
 
     const [categoriesServiceResponse, setCategoriesServiceResponse] = useState<Array<Categories>>([]);
-    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-    const [selectedCategoriesID, setSelectedCategoriesID] = useState<number[]>([]);
+    const [selectedCategories, setSelectedCategories] = useState<Array<Categories>>([]);
+    // const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    // const [selectedCategoriesID, setSelectedCategoriesID] = useState<number[]>([]);
 
 
     const [addRightDrawer, setAddRightDrawer] = useState(false);
@@ -47,7 +59,7 @@ export default function EditManga() {
     const [editDialog, setEditDialog] = useState(false);
 
 
-    const [mangaForm, setMangaForm] = useState<Manga>({ name: '', description: '', arrangement: '', ageLimit: '', status: Status.Continues, siteRating: '', malRating: '' } as Manga);
+    const [mangaForm, setMangaForm] = useState<Manga>({ name: '', description: '', arrangement: '', ageLimit: '', status: Status.Continues, fansub: '', malRating: '' } as Manga);
     const [mangaStatus, setMangaStatus] = useState(Status.Continues);
 
     const [mangaEpisodeService, setMangaEpisodeService] = useState<Array<MangaEpisodes>>([]);
@@ -63,7 +75,14 @@ export default function EditManga() {
     const [animeListService, setAnimeList] = useState<Array<AnimeModels>>([]);
     const [selectedImage, setSelectedImage] = useState('');
     const [mangaImages, setMangaImages] = useState<Array<MangaImages>>([]);
+    const { animeFiles } = useSelector((x: RootState) => x.mainReducers);
+    const dispatch = useDispatch();
+    const [result, setResult] = useState<Result>({ status: false, text: '' });
+    const [open, setOpen] = useState(false);
 
+    const [episodeCountDialog, setEpisodeCountDialog] = useState(false);
+    const [startCount, setStartCount] = useState('');
+    const [endCount, setEndCount] = useState('');
     useEffect(() => {
         loadData();
     }, []);
@@ -101,16 +120,7 @@ export default function EditManga() {
                 if (res.data.isSuccessful) {
                     setCategoriesServiceResponse(res.data.list);
                     await getCategoryTypes(id as any, Type.Manga).then((response) => {
-                        setSelectedCategories(response.data.list.map((item) => {
-                            if (res.data.list.length != 0) {
-                                var check = res.data.list.find((x) => x.id === item.categoryID);
-                                if (check != null) {
-                                    return check.name;
-                                }
-                            }
-                            return "";
-                        }))
-                        setSelectedCategoriesID(response.data.list.map((i) => i.categoryID as any));
+                        setSelectedCategories(response.data.list.map((item) => item.categories) as any);
                     }).catch((er: AxiosError) => {
                         console.log(er)
                     })
@@ -123,8 +133,8 @@ export default function EditManga() {
     const loadMangaInfo = async () => {
         await getMangaByID(id as any).then((res) => {
             if (res.data.isSuccessful && res.data.entity != null) {
-                setMangaForm(res.data.entity as Manga);
-                setSelectedImage(baseUrl + res.data.entity.image);
+                setMangaForm({ ...res.data.entity, fansub: res.data.entity.fansub != null ? res.data.entity.fansub : "" } as Manga);
+                setSelectedImage(res.data.entity.image);
             }
             else {
                 navigate("/dashboard")
@@ -133,31 +143,27 @@ export default function EditManga() {
             console.log(er);
         })
     }
-    const handleChange = (event: SelectChangeEvent<typeof selectedCategories>) => {
-        const { target: { value }, } = event;
-        setSelectedCategories(typeof value === 'string' ? value.split(',') : value);
-    };
-    const handleSelectedCategoriesID = (id: number) => {
-        var check = selectedCategoriesID.find((i) => i === id);
-        if (check != undefined) {
-            setSelectedCategoriesID(selectedCategoriesID.filter((y) => y !== id));
-        }
-        else {
-            setSelectedCategoriesID([...selectedCategoriesID, id]);
-        }
-    }
     const updateButon = async () => {
-        if (selectedAnime != null) {
-            await putManga({ ...mangaForm, animeID: selectedAnime.anime.id });
-            await putCategoryType(convertCategoryType());
-            window.location.reload();
-        }
+        setResult({ status: true, text: "Değişiklikler kaydedildi" });
+        await putManga({ ...mangaForm, animeID: selectedAnime != null ? selectedAnime.anime.id : 0 });
+        await putCategoryType(convertCategoryType());
+        var formData = new FormData();
+        animeFiles.map((item) => {
+            formData.append("files", item as any);
+        })
+        await postMangaImages(formData, id as any).then((res) => {
+            res.data.list.map((item: any) => {
+                dispatch(setUploadImage(item))
+            })
+        });
+        setOpen(true);
+        dispatch(setAnimeFiles([]));
 
     }
     const convertCategoryType = () => {
         var newArray = Array<CategoryType>();
-        selectedCategoriesID.map((item) => {
-            newArray.push({ categoryID: item, type: Type.Manga, contentID: id as any } as CategoryType);
+        selectedCategories.map((item: any) => {
+            newArray.push({ categoryID: item.id, type: Type.Manga, contentID: id as any } as CategoryType);
         })
         return newArray;
     }
@@ -260,7 +266,10 @@ export default function EditManga() {
     //     };
     // });
 
-
+    const defaultCategoryProps = {
+        options: categoriesServiceResponse,
+        getOptionLabel: (option: Categories) => option.name,
+    };
     return (
         <Loading loading={loading}>
             <Grid container sx={{ padding: "10px" }}>
@@ -278,6 +287,9 @@ export default function EditManga() {
                         >
                             {mangaForm.name}
                         </Typography>
+                        <Button onClick={updateButon} variant='contained' >
+                            Kaydet
+                        </Button>
                         <Button onClick={() => setMangaDelete(true)} sx={{ marginLeft: '10px' }} variant='outlined' startIcon={<Delete />}>
                             Sil
                         </Button>
@@ -286,7 +298,7 @@ export default function EditManga() {
                 <Grid container>
                     <div style={{ marginBottom: '20px', justifyContent: 'center', display: 'flex', flex: 1 }}>
                         <Grid item sx={{ marginTop: '20px', justifyContent: 'center', alignItems: 'center', display: 'flex' }} sm={12} md={12} xs={12}>
-                            {selectedImage.length === 0 && <IconButton color="primary" aria-label="upload picture" component="label">
+                            {/* {selectedImage.length === 0 && <IconButton color="primary" aria-label="upload picture" component="label">
                                 <input onChange={async (e) => {
                                     if (e.target.files && e.target.files[0]) {
                                         var form = new FormData();
@@ -298,11 +310,8 @@ export default function EditManga() {
                                 }}
                                     hidden accept="image/*" type="file" />
                                 <PhotoCamera />
-                            </IconButton>}
+                            </IconButton>} */}
                             {selectedImage.length !== 0 && <img src={selectedImage} style={{ height: '200px', width: '150px' }} />}
-                            {selectedImage.length !== 0 && <IconButton onClick={() => setSelectedImage('')} sx={{ position: 'relative', marginTop: '-180px', marginLeft: '0px' }}>
-                                <Delete />
-                            </IconButton>}
                         </Grid>
                     </div>
                     <Grid item xs={12} md={12} sm={12} sx={{ marginBottom: '20px' }}>
@@ -342,6 +351,20 @@ export default function EditManga() {
                                                     onChange={(event: any, newValue: AnimeModels | null) => {
                                                         if (newValue != null) {
                                                             setSelectedAnime(newValue as any)
+
+                                                            if (newValue.categories != null && newValue.categories.length !== 0) {
+                                                                setSelectedImage(newValue.anime.img != null ? newValue.anime.img : "");
+                                                                setSelectedCategories(newValue.categories.map((item) => item.categories));
+                                                                setMangaForm({
+                                                                    ...mangaForm,
+                                                                    name: newValue.anime.animeName,
+                                                                    ageLimit: newValue.anime.ageLimit,
+                                                                    malRating: newValue.anime.malRating,
+                                                                    description: newValue.anime.animeDescription,
+                                                                    image: newValue.anime.img != null ? newValue.anime.img : "",
+                                                                    fansub: newValue.anime.fansub != null ? newValue.anime.fansub : ""
+                                                                });
+                                                            }
                                                         }
                                                     }}
                                                     isOptionEqualToValue={(option, value) => option.anime.animeName === value.anime.animeName}
@@ -369,6 +392,20 @@ export default function EditManga() {
                                                 maxWidth: '100%',
                                             }}>
                                             <TextField
+                                                value={mangaForm.image}
+                                                onChange={(e) => {
+                                                    setMangaForm({ ...mangaForm, image: mangaForm.image != null ? e.target.value : "" });
+                                                    setSelectedImage(e.target.value);
+                                                }}
+                                                label="Kapak Resim"
+                                                fullWidth
+                                            ></TextField>
+                                        </Box>
+                                        <Box
+                                            sx={{
+                                                maxWidth: '100%',
+                                            }}>
+                                            <TextField
                                                 value={mangaForm.description}
                                                 onChange={(e) => setMangaForm({ ...mangaForm, description: e.target.value })}
                                                 rows={4}
@@ -381,31 +418,36 @@ export default function EditManga() {
                                             maxWidth: '100%',
                                         }}>
                                             <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
-                                                <InputLabel id="demo-multiple-checkbox-label">Kategoriler</InputLabel>
-                                                <Select
-                                                    labelId="demo-multiple-checkbox-label"
-                                                    id="demo-multiple-checkbox"
+                                                <Autocomplete
+                                                    {...defaultCategoryProps}
                                                     multiple
+                                                    id="checkboxes-tags-demo"
+                                                    disableCloseOnSelect
                                                     value={selectedCategories}
-                                                    onChange={handleChange}
-                                                    input={<OutlinedInput label="Kategoriler" />}
-                                                    renderValue={(selected) => selected.join(', ')}
-                                                    MenuProps={MenuProps}
-                                                >
-                                                    {
-                                                        categoriesServiceResponse != null && categoriesServiceResponse.length != 0 &&
-                                                        categoriesServiceResponse.map((item, index) => {
-                                                            return <MenuItem onClick={() => handleSelectedCategoriesID(item.id != null ? item.id : 0)} key={item.id} value={item.name}>
-                                                                <Checkbox checked={selectedCategories.indexOf(item.name) > -1} />
-                                                                <ListItemText primary={item.name} />
-                                                            </MenuItem>
-                                                        })
-                                                    }
-                                                </Select>
+                                                    onChange={(event, newValue) => {
+                                                        setSelectedCategories(newValue as Array<Categories>);
+                                                    }}
+                                                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                                                    renderOption={(props, option, { selected }) => (
+                                                        <li {...props}>
+                                                            <Checkbox
+                                                                icon={icon}
+                                                                checkedIcon={checkedIcon}
+                                                                style={{ marginRight: 8 }}
+                                                                checked={selected}
+                                                            />
+                                                            {option.name}
+                                                        </li>
+                                                    )}
+                                                    fullWidth
+                                                    renderInput={(params) => (
+                                                        <TextField {...params} label="Kategoriler" placeholder="Kategori" />
+                                                    )}
+                                                />
                                             </FormControl>
                                         </Box>
                                         <Box sx={{
-                                            marginTop: '10px',
+                                            marginTop: '10px', marginBottom: '10px',
                                             maxWidth: '100%',
                                         }}>
                                             <FormControl fullWidth>
@@ -421,40 +463,43 @@ export default function EditManga() {
                                                     }}
                                                 >
                                                     <MenuItem value={Status.Continues}>Devam Ediyor</MenuItem>
+                                                    <MenuItem value={Status.Abandoned}>Yarıda Bırakıldı</MenuItem>
                                                     <MenuItem value={Status.Completed}>Tamamlandı</MenuItem>
                                                 </Select>
                                             </FormControl>
                                         </Box>
+                                        <FormControl fullWidth>
+                                            <InputLabel id="demo-simple-select-label">Yaş Sınırı</InputLabel>
+                                            <Select
+                                                labelId="demo-simple-select-label"
+                                                id="demo-simple-select"
+                                                value={mangaForm.ageLimit.replace(' ', '')}
+                                                label="Yaş Sınırı"
+                                                onChange={(e) => {
+
+                                                    setMangaForm({ ...mangaForm, ageLimit: e.target.value })
+                                                }}
+                                            >
+                                                <MenuItem value={"7"}>+7</MenuItem>
+                                                <MenuItem value={"13"}>+13</MenuItem>
+                                                <MenuItem value={"18"}>+18</MenuItem>
+                                            </Select>
+                                        </FormControl>
                                         <Grid item sm={12} md={12} xs={12} >
                                             <TextField
-                                                value={mangaForm.ageLimit}
-                                                onChange={(e) => setMangaForm({ ...mangaForm, ageLimit: e.target.value })}
-                                                label="Yaş Sınırı"
+                                                value={mangaForm.malRating}
+                                                onChange={(e) => setMangaForm({ ...mangaForm, malRating: e.target.value })}
+                                                label="Mal Rating"
                                                 fullWidth
                                             ></TextField>
                                         </Grid>
-                                        <Grid container spacing={2} sx={{ '& .MuiGrid-item': { paddingTop: 0 } }}>
-                                            <Grid item sm={6} md={6} xs={12}>
-                                                <TextField
-                                                    value={mangaForm.siteRating}
-                                                    onChange={(e) => setMangaForm({ ...mangaForm, siteRating: e.target.value })}
-                                                    label="Site Rating"
-                                                    fullWidth
-                                                ></TextField>
-                                            </Grid>
-                                            <Grid item sm={6} md={6} xs={12}>
-                                                <TextField
-                                                    value={mangaForm.malRating}
-                                                    onChange={(e) => setMangaForm({ ...mangaForm, malRating: e.target.value })}
-                                                    label="Mal Rating"
-                                                    fullWidth
-                                                ></TextField>
-                                            </Grid>
-                                        </Grid>
-                                        <Grid item sm={12} md={12} xs={12} sx={{ marginTop: '10px' }} >
-                                            <Button onClick={updateButon} variant='contained' fullWidth>
-                                                Kaydet
-                                            </Button>
+                                        <Grid item sm={12} md={12} xs={12} >
+                                            <TextField
+                                                value={mangaForm.fansub}
+                                                onChange={(e) => setMangaForm({ ...mangaForm, fansub: e.target.value })}
+                                                label="Fansub"
+                                                fullWidth
+                                            ></TextField>
                                         </Grid>
                                     </div>
                                 </Box>
@@ -472,6 +517,11 @@ export default function EditManga() {
                                 <Typography>Bölüm Bilgileri</Typography>
                             </AccordionSummary>
                             <AccordionDetails>
+                                <Box sx={{ flex: 1, display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+                                    <Button onClick={() => setEpisodeCountDialog(true)} variant='contained' sx={{ marginLeft: '15px' }}>
+                                        Otomatik Bölüm Ekle
+                                    </Button>
+                                </Box>
                                 <DataTable
                                     EnhancedTableToolbar={EnhancedTableToolbar}
                                     rows={mangaEpisodeService.map((item) => item.id.toString())}
@@ -637,6 +687,50 @@ export default function EditManga() {
                     </Button>
                 }
             />
+            <Dialog fullWidth open={episodeCountDialog} onClose={() => setEpisodeCountDialog(false)}>
+                <DialogTitle>Otomatik Bölüm Oluştur</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Aşağıya girdiğiniz değer aralığında bölüm eklenecektir.
+                    </DialogContentText>
+                    <TextField
+                        onChange={(e) => setStartCount(e.target.value)}
+                        value={startCount.toString()}
+                        autoFocus
+                        margin="dense"
+                        id="name"
+                        label="Başlangıç Sayısı"
+                        type="email"
+                        fullWidth
+                        variant="standard"
+                    />
+                    <TextField
+                        onChange={(e) => setEndCount(e.target.value)}
+                        value={endCount.toString()}
+                        autoFocus
+                        margin="dense"
+                        id="name"
+                        label="Bitiş Sayısı"
+                        type="email"
+                        fullWidth
+                        variant="standard"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={async () => {
+                        await addAutoMangaEpisodes(parseInt(startCount), parseInt(endCount), id as any)
+                            .then((res) => {
+                                if (res.data.count != 0) {
+                                    setMangaEpisodeService(mangaEpisodeService.concat(res.data.list as any));
+                                }
+                            })
+                        setEpisodeCountDialog(false);
+                    }}>Oluştur</Button>
+                </DialogActions>
+            </Dialog>
+            <ResultSnackbar
+                props={{ anchorOrigin: { horizontal: 'center', vertical: 'bottom' }, autoHideDuration: 700 }}
+                result={result} open={open} closeOpen={() => setOpen(false)} />
         </Loading>
     )
 }
@@ -727,7 +821,9 @@ const EditEpisode = (props: { id: number, handleUpdateEntity: (entity: MangaEpis
     const [addContentDrawer, setAddContentDrawer] = useState(false);
 
     const [mangaContentDeleteDialog, setMangaContentDeleteDialog] = useState(false);
-
+    const [episodeCountDialog, setEpisodeCountDialog] = useState(false);
+    const [startCount, setStartCount] = useState('');
+    const [endCount, setEndCount] = useState('');
     useEffect(() => {
         loadMangaEpisode();
         loadMangaContentEpisode();
@@ -806,6 +902,7 @@ const EditEpisode = (props: { id: number, handleUpdateEntity: (entity: MangaEpis
                         {props.tableName}
                     </Typography>
                 )}
+
                 {numSelected == 0 && <IconButton onClick={props.goAddPage}>
                     <Add />
                 </IconButton>}
@@ -899,6 +996,7 @@ const EditEpisode = (props: { id: number, handleUpdateEntity: (entity: MangaEpis
                     </Grid>
                 </Grid>
                 <Grid container>
+
                     <DataTable
                         EnhancedTableToolbar={EnhancedTableToolbar}
                         rows={serviceResponse.map((item) => item.id.toString())}
@@ -922,6 +1020,13 @@ const EditEpisode = (props: { id: number, handleUpdateEntity: (entity: MangaEpis
                         handleDelete={() => {
                             setMangaContentDeleteDialog(true);
                         }}
+                        extraData={
+                            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+                                <Button onClick={() => setEpisodeCountDialog(true)} variant='contained' sx={{ marginLeft: '15px' }}>
+                                    Otomatik Bölüm Ekle
+                                </Button>
+                            </Box>
+                        }
                         tableName="İçerikler"
                         tableBody={!editLoading && serviceResponse.length != 0 &&
                             <TableBody>
@@ -958,13 +1063,13 @@ const EditEpisode = (props: { id: number, handleUpdateEntity: (entity: MangaEpis
                                                 >
                                                     <img
                                                         style={{ height: '60px', width: '60px' }}
-                                                        src={`https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?w=164&h=164&fit=crop&auto=format`}
-                                                        srcSet={`https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?w=164&h=164&fit=crop&auto=format&dpr=2 2x`}
-                                                        alt={"deneme"}
+                                                        src={row.contentImage}
+                                                        srcSet={row.contentImage}
+                                                        alt={"Manga"}
                                                         loading="lazy"
                                                     />
                                                 </TableCell>
-                                                <TableCell>{row.description}</TableCell>
+                                                <TableCell>{row.description !== null && row.description.length !== 0 && row.description}</TableCell>
                                                 <TableCell>{row.contentOrder}</TableCell>
                                             </TableRow>
                                         );
@@ -983,6 +1088,47 @@ const EditEpisode = (props: { id: number, handleUpdateEntity: (entity: MangaEpis
                     />
                 </Grid>
             </Box>
+            <Dialog fullWidth open={episodeCountDialog} onClose={() => setEpisodeCountDialog(false)}>
+                <DialogTitle>Otomatik İçerik Oluştur</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Aşağıya girdiğiniz değer aralığında içerik eklenecektir.
+                    </DialogContentText>
+                    <TextField
+                        onChange={(e) => setStartCount(e.target.value)}
+                        value={startCount.toString()}
+                        autoFocus
+                        margin="dense"
+                        id="name"
+                        label="Başlangıç Sayısı"
+                        type="email"
+                        fullWidth
+                        variant="standard"
+                    />
+                    <TextField
+                        onChange={(e) => setEndCount(e.target.value)}
+                        value={endCount.toString()}
+                        autoFocus
+                        margin="dense"
+                        id="name"
+                        label="Bitiş Sayısı"
+                        type="email"
+                        fullWidth
+                        variant="standard"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={async () => {
+                        await addAutoMangaEpisodeContents(parseInt(startCount), parseInt(endCount), props.id as any)
+                            .then((res) => {
+                                if (res.data.count != 0) {
+                                    setServiceResponse(serviceResponse.concat(res.data.list as any));
+                                }
+                            })
+                        setEpisodeCountDialog(false);
+                    }}>Oluştur</Button>
+                </DialogActions>
+            </Dialog>
             <AddEpisodesContentRightDrawer
                 episodeID={props.id}
                 handleUpdateEpisode={(entity: MangaEpisodeContent) => {
@@ -1004,13 +1150,12 @@ const EditEpisode = (props: { id: number, handleUpdateEntity: (entity: MangaEpis
                 dialogContentText={"Bu işlem geri alınamaz"}
                 yesButon={
                     <Button onClick={async () => {
-                        await deleteMangaEpisodeContent(props.id)
-                            .then((res) => {
-                                setServiceResponse(handleDeleteContentItem(res.data.list));
-
-                            }).catch((er) => {
-                                console.log(er)
+                        selected.map(async (item) => {
+                            var toConvertInt = selected.map((item) => parseInt(item));
+                            await deleteMangaEpisodeContents(toConvertInt).then((res) => {
+                                setServiceResponse(handleDeleteContentItem(toConvertInt));
                             });
+                        })
                         setSelected([]);
                         setMangaContentDeleteDialog(false);
                     }}>
@@ -1029,7 +1174,7 @@ const EditEpisode = (props: { id: number, handleUpdateEntity: (entity: MangaEpis
 const AddEpisodesContentRightDrawer = (props: { drawerState: boolean, handleCloseDrawer: () => void, episodeID: number, handleUpdateEpisode: (entity: MangaEpisodeContent) => void }) => {
     const [episodeForm, setEpisodeForm] = useState<MangaEpisodeContent>({ description: '', episodeID: props.episodeID, contentOrder: 1 } as MangaEpisodeContent);
     const [selectedImage, setSelectedImage] = useState('');
-
+    const [form, setForm] = useState<FormData>(new FormData());
     const saveButon = async () => {
         await postMangaContentEpisode(episodeForm)
             .then((res) => {
@@ -1056,21 +1201,42 @@ const AddEpisodesContentRightDrawer = (props: { drawerState: boolean, handleClos
             >
                 <Grid container sx={{ padding: '0px 15px' }} >
                     <Grid item sx={{ marginTop: '20px', justifyContent: 'center', alignItems: 'center', display: 'flex', }} sm={12} md={12} xs={12}>
-                        {selectedImage.length != 0 && <IconButton onClick={() => setSelectedImage('')} sx={{ position: 'absolute' }}>
+                        {selectedImage.length != 0 && <IconButton onClick={() => {
+                            setSelectedImage('')
+                            setEpisodeForm({ ...episodeForm, contentImage: '' })
+                        }} sx={{ position: 'absolute' }}>
                             <Delete />
                         </IconButton>}
-                        {selectedImage.length === 0 && <IconButton color="primary" aria-label="upload picture" component="label">
+                        {/* {selectedImage.length === 0 && <IconButton color="primary" aria-label="upload picture" component="label">
                             <input onChange={(e) => {
                                 if (e.target.files && e.target.files[0]) {
+                                    var formData = new FormData();
+                                    formData.append("img", e.target.files[0] as any);
+                                    setForm(formData);
                                     setSelectedImage(URL.createObjectURL(e.target.files[0]))
                                 }
                             }}
                                 hidden accept="image/*" type="file" />
                             <PhotoCamera />
-                        </IconButton>}
+                        </IconButton>} */}
                         {selectedImage.length != 0 && <img src={selectedImage} style={{ height: '125px', width: '125px' }} />}
                     </Grid>
                     <Grid item sm={12} md={12} xs={12}>
+                        <Box
+                            sx={{
+                                marginTop: '10px',
+                                maxWidth: '100%',
+                            }}>
+                            <TextField
+                                value={episodeForm.contentImage}
+                                onChange={(e) => {
+                                    setEpisodeForm({ ...episodeForm, contentImage: e.target.value })
+                                    setSelectedImage(e.target.value);
+                                }}
+                                label="Embed Link"
+                                fullWidth
+                            ></TextField>
+                        </Box>
                         <Box
                             sx={{
                                 marginTop: '10px',
@@ -1121,6 +1287,7 @@ const EditEpisodesContentRightDrawer = (props: { drawerState: boolean, handleClo
     const [episodeForm, setEpisodeForm] = useState<MangaEpisodeContent>({ description: '', episodeID: props.episodeID, contentOrder: 1 } as MangaEpisodeContent);
     const [selectedImage, setSelectedImage] = useState('');
     const [loading, setLoading] = useState(true);
+    const [formData, setFormData] = useState<FormData>(new FormData());
     useEffect(() => {
         loadData();
     }, [])
@@ -1148,6 +1315,7 @@ const EditEpisodesContentRightDrawer = (props: { drawerState: boolean, handleClo
 
             })
     }
+    console.log(selectedImage)
     return (
         <Loading loading={loading}>
             <Drawer
@@ -1167,18 +1335,36 @@ const EditEpisodesContentRightDrawer = (props: { drawerState: boolean, handleClo
                             {selectedImage.length != 0 && <IconButton onClick={() => setSelectedImage('')} sx={{ position: 'absolute' }}>
                                 <Delete />
                             </IconButton>}
-                            {selectedImage.length === 0 && <IconButton color="primary" aria-label="upload picture" component="label">
+                            {/* {selectedImage.length === 0 && <IconButton color="primary" aria-label="upload picture" component="label">
                                 <input onChange={(e) => {
                                     if (e.target.files && e.target.files[0]) {
+                                        var formData = new FormData();
+                                        formData.append("img", e.target.files[0] as any);
+                                        setFormData(formData);
                                         setSelectedImage(URL.createObjectURL(e.target.files[0]))
                                     }
                                 }}
                                     hidden accept="image/*" type="file" />
                                 <PhotoCamera />
-                            </IconButton>}
-                            {selectedImage.length != 0 && <img src={selectedImage} style={{ height: '125px', width: '125px' }} />}
+                            </IconButton>} */}
+                            {selectedImage.length !== 0 && <img src={selectedImage} style={{ height: '125px', width: '125px' }} />}
                         </Grid>
                         <Grid item sm={12} md={12} xs={12}>
+                            <Box
+                                sx={{
+                                    marginTop: '10px',
+                                    maxWidth: '100%',
+                                }}>
+                                <TextField
+                                    value={episodeForm.contentImage}
+                                    onChange={(e) => {
+                                        setEpisodeForm({ ...episodeForm, contentImage: e.target.value })
+                                        setSelectedImage(e.target.value);
+                                    }}
+                                    label="Embed Link"
+                                    fullWidth
+                                ></TextField>
+                            </Box>
                             <Box
                                 sx={{
                                     marginTop: '10px',

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Accordion, AccordionDetails, AccordionSummary, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid, Paper, TextField, Typography } from '@mui/material'
+import { Accordion, AccordionDetails, AccordionSummary, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid, Paper, TextField, Typography, withStyles } from '@mui/material'
 import { Box } from '@mui/system'
 import { GridExpandMoreIcon } from '@mui/x-data-grid'
 import { getMe, getSocialMediaAccount, postUserEmailVertification, putEmail, putPassword, putSocialMediaAccount, putUserInfo } from '../utils/api'
@@ -8,7 +8,6 @@ import { SocialMediaAccount, Users } from '../types/Entites'
 import { useAuth } from '../hooks/useAuth'
 import ResultSnackbar, { Result } from '../components/ResultSnackbar'
 import { AxiosError } from 'axios'
-
 
 export default function Settings() {
 
@@ -51,7 +50,7 @@ export default function Settings() {
     }
     const loadSocialMediaAccount = async () => {
         await getSocialMediaAccount().then((res) => {
-            if (res.data.isSuccessful) {
+            if (res.data.isSuccessful && res.data.entity !== null) {
                 setSocialMediaForm(res.data.entity);
             }
         }).catch((er) => {

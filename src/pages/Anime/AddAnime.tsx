@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from 'react'
 import dayjs, { Dayjs } from 'dayjs';
 import Stack from '@mui/material/Stack';
-import { Box, Button, Checkbox, FormControl, Grid, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TextField, Toolbar, Typography } from '@mui/material'
+import Loading from '../../components/Loading';
+
+import { Autocomplete, Box, Button, Checkbox, FormControl, Grid, InputLabel, ListItemText, MenuItem, OutlinedInput, Paper, Select, SelectChangeEvent, TextField, Toolbar, Typography } from '@mui/material'
 import { getCategories, postAnime, postCategoryType } from '../../utils/api'
-import { Anime, Categories, CategoryType, Status, Type, VideoType } from '../../types/Entites';
+import { Anime, AnimeSeason, Categories, CategoryType, Status, Type, VideoType } from '../../types/Entites';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
-
-
-
-import Loading from '../../components/Loading';
 import { AxiosError } from 'axios';
 import { AnimeForm } from '../../types/EntitesForm';
 import { useNavigate } from 'react-router';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
 
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 
 export default function AddAnime() {
@@ -22,14 +24,14 @@ export default function AddAnime() {
     const [loading, setLoading] = useState(true);
 
     const [categoriesService, setCategoriesService] = useState<Array<Categories>>([]);
-    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    // const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedCategoriesID, setSelectedCategoriesID] = useState<number[]>([]);
-
+    const [selectedCategories, setSelectedCategories] = useState<Array<Categories>>([]);
     const [contentType, setContentType] = useState<VideoType>(VideoType.AnimeMovie);
     const [animeStatus, setAnimeStatus] = useState<Status>(Status.Continues);
     const [firstShowDate, setFirstShowDate] = useState<Dayjs | null>(dayjs(new Date()));
 
-    const [animeForm, setAnimeForm] = useState<AnimeForm>({ animeName: '', animeDescription: '', malRating: '', ageLimit: '', seasonCount: 1, showTime: firstShowDate?.toString(), status: animeStatus, videoType: contentType, siteRating: '' } as Anime);
+    const [animeForm, setAnimeForm] = useState<AnimeForm>({ animeName: '', animeDescription: '', malRating: '', ageLimit: '', seasonCount: 1, showTime: firstShowDate?.toString(), status: animeStatus, videoType: contentType, siteRating: '', img: '', fansub: '' } as Anime);
 
     const [formCheck, setFormCheck] = useState(false);
     useEffect(() => {
@@ -55,19 +57,14 @@ export default function AddAnime() {
             });
         setLoading(false);
     }
-
-    const handleChange = (event: SelectChangeEvent<typeof selectedCategories>) => {
-        const { target: { value }, } = event;
-        setSelectedCategories(typeof value === 'string' ? value.split(',') : value);
-    };
     const saveButon = async () => {
-        if (animeForm.animeName.length != 0 && animeForm.animeDescription.length != 0 && selectedCategoriesID.length != 0 && animeForm.ageLimit.length != 0 && animeForm.seasonCount != 0 && animeForm.malRating != undefined && animeForm.malRating.length != 0) {
+        if (animeForm.animeName.length != 0 && animeForm.animeDescription.length != 0 && animeForm.ageLimit.length != 0 && animeForm.seasonCount != 0 && animeForm.malRating != undefined && animeForm.malRating.length != 0) {
             setFormCheck(false);
             await postAnime(animeForm).then(async (res) => {
                 if (res.data.isSuccessful) {
                     var categoryTypeArray = new Array<CategoryType>();
-                    selectedCategoriesID.map((item: number) => {
-                        categoryTypeArray.push({ contentID: res.data.entity.id, type: Type.Anime, categoryID: item } as CategoryType);
+                    selectedCategories.map((item: Categories) => {
+                        categoryTypeArray.push({ contentID: res.data.entity.id, type: Type.Anime, categoryID: item.id } as CategoryType);
                     })
                     await postCategoryType(categoryTypeArray).then((response) => {
                         navigate("/anime/" + res.data.entity.id);
@@ -82,9 +79,14 @@ export default function AddAnime() {
             })
         }
         else {
+            console.log("c")
             setFormCheck(true);
         }
     }
+    const defaultCategoryProps = {
+        options: categoriesService,
+        getOptionLabel: (option: Categories) => option.name,
+    };
     return (
         <Loading loading={loading}>
             <Grid container sx={{ padding: "10px" }}>
@@ -127,6 +129,17 @@ export default function AddAnime() {
                                         maxWidth: '100%',
                                     }}>
                                     <TextField
+                                        value={animeForm.img}
+                                        onChange={(e) => setAnimeForm({ ...animeForm, img: e.target.value })}
+                                        label="Kapak Resim"
+                                        fullWidth
+                                    ></TextField>
+                                </Box>
+                                <Box
+                                    sx={{
+                                        maxWidth: '100%',
+                                    }}>
+                                    <TextField
                                         value={animeForm.animeDescription}
                                         onChange={(e) => setAnimeForm({ ...animeForm, animeDescription: e.target.value })}
                                         rows={4}
@@ -138,35 +151,41 @@ export default function AddAnime() {
                                     marginTop: '10px',
                                     maxWidth: '100%',
                                 }}>
+
                                     <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
-                                        <InputLabel id="demo-multiple-checkbox-label">Kategoriler</InputLabel>
-                                        <Select
-                                            labelId="demo-multiple-checkbox-label"
-                                            id="demo-multiple-checkbox"
+                                        <Autocomplete
+                                            {...defaultCategoryProps}
                                             multiple
-                                            value={selectedCategories}
-                                            onChange={handleChange}
-                                            input={<OutlinedInput label="Kategoriler" />}
-                                            renderValue={(selected) => selected.join(', ')}
-                                            MenuProps={MenuProps}
-                                        >
-                                            {
-                                                categoriesService != null && categoriesService.length != 0 &&
-                                                categoriesService.map((item, index) => {
-                                                    return <MenuItem onClick={() => handleSelectedCategoriesID(item.id != null ? item.id : 0)} key={item.id} value={item.name}>
-                                                        <Checkbox checked={selectedCategories.indexOf(item.name) > -1} />
-                                                        <ListItemText primary={item.name} />
-                                                    </MenuItem>
-                                                })
-                                            }
-                                        </Select>
+                                            id="checkboxes-tags-demo"
+                                            disableCloseOnSelect
+                                            onChange={(event, newValue) => {
+                                                setSelectedCategories(newValue as Array<Categories>);
+                                            }}
+                                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                                            renderOption={(props, option, { selected }) => (
+                                                <li {...props}>
+                                                    <Checkbox
+
+                                                        icon={icon}
+                                                        checkedIcon={checkedIcon}
+                                                        style={{ marginRight: 8 }}
+                                                        checked={selected}
+                                                    />
+                                                    {option.name}
+                                                </li>
+                                            )}
+                                            fullWidth
+                                            renderInput={(params) => (
+                                                <TextField {...params} label="Kategoriler" placeholder="Kategori" />
+                                            )}
+                                        />
                                     </FormControl>
                                 </Box>
                                 <Box>
                                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                                         <Stack>
                                             <DesktopDatePicker
-                                                label="Gösterim Tarihi"
+                                                label="Başlangıç Tarihi"
                                                 inputFormat="DD/MM/YYYY"
                                                 value={firstShowDate}
                                                 onChange={(e) => {
@@ -216,39 +235,31 @@ export default function AddAnime() {
                                             }}
                                         >
                                             <MenuItem value={Status.Continues}>Devam Ediyor</MenuItem>
+                                            <MenuItem value={Status.Abandoned}>Yarıda Bırakıldı</MenuItem>
                                             <MenuItem value={Status.Completed}>Tamamlandı</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Box>
-                                <Grid container spacing={2} sx={{ '& .MuiGrid-item': { paddingTop: 0 } }}>
-                                    <Grid item sm={6} md={6} xs={12} >
-                                        <TextField
-                                            value={animeForm.ageLimit}
-                                            onChange={(e) => setAnimeForm({ ...animeForm, ageLimit: e.target.value })}
-                                            label="Yaş Sınırı"
-                                            fullWidth
-                                        ></TextField>
-                                    </Grid>
-                                    <Grid item sm={6} md={6} xs={12}>
-                                        <TextField
-                                            type={"number"}
-                                            value={animeForm.seasonCount}
-                                            onChange={(e) => setAnimeForm({ ...animeForm, seasonCount: parseInt(e.target.value) })}
-                                            label="Sezon Sayısı"
-                                            fullWidth
-                                        ></TextField>
-                                    </Grid>
-                                </Grid>
-                                <Grid container spacing={2} sx={{ '& .MuiGrid-item': { paddingTop: 0 } }}>
-                                    <Grid item sm={6} md={6} xs={12}>
-                                        <TextField
-                                            value={animeForm.siteRating}
-                                            onChange={(e) => setAnimeForm({ ...animeForm, siteRating: e.target.value })}
-                                            label="Site Rating"
-                                            fullWidth
-                                        ></TextField>
-                                    </Grid>
-                                    <Grid item sm={6} md={6} xs={12}>
+
+                                <FormControl fullWidth>
+                                    <InputLabel id="demo-simple-select-label">Yaş Sınırı</InputLabel>
+                                    <Select
+                                        labelId="demo-simple-select-label"
+                                        id="demo-simple-select"
+                                        value={animeForm.ageLimit}
+                                        label="Yaş Sınırı"
+                                        onChange={(e) => {
+
+                                            setAnimeForm({ ...animeForm, ageLimit: e.target.value })
+                                        }}
+                                    >
+                                        <MenuItem value={"+7"}>+7</MenuItem>
+                                        <MenuItem value={"+13"}>+13</MenuItem>
+                                        <MenuItem value={"+18"}>+18</MenuItem>
+                                    </Select>
+                                </FormControl>
+                                <Grid container spacing={2}>
+                                    <Grid item sm={12} md={12} xs={12}>
                                         <TextField
                                             value={animeForm.malRating}
                                             onChange={(e) => setAnimeForm({ ...animeForm, malRating: e.target.value })}
@@ -257,6 +268,26 @@ export default function AddAnime() {
                                         ></TextField>
                                     </Grid>
                                 </Grid>
+                                <Grid container spacing={2}>
+                                    <Grid item sm={12} md={12} xs={12}>
+                                        <TextField
+                                            value={animeForm.fansub}
+                                            onChange={(e) => setAnimeForm({ ...animeForm, fansub: e.target.value })}
+                                            label="Fansub"
+                                            fullWidth
+                                        ></TextField>
+                                    </Grid>
+                                </Grid>
+                                <Box>
+                                    <TextField
+                                        type={"number"}
+                                        value={animeForm.seasonCount}
+                                        onChange={(e) => setAnimeForm({ ...animeForm, seasonCount: parseInt(e.target.value) })}
+                                        label="Sezon Sayısı"
+                                        fullWidth
+                                    ></TextField>
+                                </Box>
+
                             </div>
                         </Paper>
                     </Grid>
@@ -265,6 +296,10 @@ export default function AddAnime() {
         </Loading>
     )
 }
+
+
+
+
 const MenuProps = {
     PaperProps: {
         style: {

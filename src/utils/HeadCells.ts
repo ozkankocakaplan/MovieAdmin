@@ -1,6 +1,45 @@
 import { HeadCell } from "../components/TableHelper";
-import { Anime, AnimeEpisodes, AnimeSeasonMusic, Categories, Contact, ContactSubject, ContentComplaint, Episodes, FanArt, HomeSlider, Users } from "../types/Entites";
-
+import { Anime, AnimeEpisodes, AnimeSeasonMusic, Categories, Contact, ContactSubject, ContentComplaint, Episodes, FanArt, HomeSlider, Manga, MovieTheWeekModels, Users } from "../types/Entites";
+export const movieTheWeekCells: HeadCell<MovieTheWeekModels>[] = [
+    {
+        id: 0,
+        align: 'left',
+        disablePadding: false,
+        label: 'Resim',
+    },
+    {
+        id: 1,
+        align: 'left',
+        disablePadding: true,
+        label: 'Anime Adı',
+    },
+    {
+        id: 2,
+        align: 'left',
+        disablePadding: true,
+        label: 'Ekleyen',
+    }
+];
+export const mangaTheWeekCells: HeadCell<MovieTheWeekModels>[] = [
+    {
+        id: 0,
+        align: 'left',
+        disablePadding: false,
+        label: 'Resim',
+    },
+    {
+        id: 1,
+        align: 'left',
+        disablePadding: true,
+        label: 'Manga Adı',
+    },
+    {
+        id: 2,
+        align: 'left',
+        disablePadding: true,
+        label: 'Ekleyen',
+    }
+];
 export const animeCells: HeadCell<Anime>[] = [
     {
         id: 0,
@@ -67,23 +106,23 @@ export const rosetteCells: HeadCell<Categories>[] = [
         label: 'Roset Adı',
     },
 ];
-export const mangaCells: HeadCell<Anime>[] = [
+export const mangaCells: HeadCell<Manga>[] = [
     {
         id: 0,
-        align: 'center',
-        disablePadding: true,
+        align: 'left',
+        disablePadding: false,
         label: 'Resim',
     },
     {
         id: 1,
         align: 'left',
-        disablePadding: true,
+        disablePadding: false,
         label: 'Manga Adı',
     },
     {
         id: 2,
         align: 'left',
-        disablePadding: true,
+        disablePadding: false,
         label: 'Açıklama',
     },
     {
@@ -91,12 +130,6 @@ export const mangaCells: HeadCell<Anime>[] = [
         align: 'left',
         disablePadding: false,
         label: 'Yaş Sınırı',
-    },
-    {
-        id: 6,
-        align: 'center',
-        disablePadding: false,
-        label: 'Okuma ve Beğeni',
     },
     {
         id: 7,
@@ -153,32 +186,32 @@ export const contentComplaintCells: HeadCell<ContentComplaint>[] = [
     {
         id: 0,
         align: 'left',
-        disablePadding: true,
+        disablePadding: false,
         label: 'Ad Soyad',
     },
     {
         id: 1,
         align: 'left',
-        disablePadding: true,
+        disablePadding: false,
         label: 'E-posta',
     },
     {
         id: 2,
         align: 'left',
-        disablePadding: true,
+        disablePadding: false,
         label: 'Şikayet İçeriği',
     },
     {
         id: 3,
         align: 'left',
-        disablePadding: true,
-        label: 'İçerik',
+        disablePadding: false,
+        label: 'İçerik Bilgisi',
     },
     {
         id: 4,
         align: 'left',
-        disablePadding: true,
-        label: 'İçerik Tipi',
+        disablePadding: false,
+        label: 'Tarih',
     },
 ];
 export const complaintCells: HeadCell<ContentComplaint>[] = [
@@ -356,30 +389,30 @@ export const fanArtCells: HeadCell<FanArt>[] = [
         disablePadding: false,
         label: 'Resim',
     },
-
+    {
+        id: 4,
+        align: 'left',
+        disablePadding: false,
+        label: 'Kullanıcı Adı',
+    },
     {
         id: 1,
         align: 'left',
-        disablePadding: true,
+        disablePadding: false,
         label: 'Ad',
     },
     {
         id: 2,
         align: 'left',
-        disablePadding: true,
+        disablePadding: false,
         label: 'Tür',
     },
     {
         id: 3,
         align: 'left',
-        disablePadding: true,
+        disablePadding: false,
         label: 'Açıklama',
     },
-    {
-        id: 4,
-        align: 'left',
-        disablePadding: true,
-        label: 'Kullanıcı Adı',
-    },
+
 
 ]

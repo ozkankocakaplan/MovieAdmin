@@ -32,11 +32,8 @@ export const LoginPage = () => {
                     setLoginResult({ status: false, text: res.data.exceptionMessage });
                 }
                 else {
-                    console.log(res.data);
                     setLoginResult({ status: true, text: "Giriş Başarılı" });
-                    setTimeout(() => {
-                        login(res.data.entity);
-                    }, 2000);
+                    login(res.data.entity);
                 }
             }).catch((er: AxiosError) => {
 
@@ -60,12 +57,9 @@ export const LoginPage = () => {
                 }}
             >
                 <ResultSnackbar result={loginResult} open={open} closeOpen={() => setOpen(false)} />
-
-                <Avatar sx={{ m: 1, bgcolor: "primary.main" }}>
-                    <LockOutlinedIcon />
-                </Avatar>
-                <Typography component="h1" variant="h5">
-                    Admin Girişi
+                <img src="/logo.png" />
+                <Typography component="h1" sx={{ color: '#fff', marginTop: '15px' }} variant="h5">
+                    GİRİŞ
                 </Typography>
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
                     <TextField

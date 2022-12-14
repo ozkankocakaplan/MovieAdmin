@@ -7,7 +7,7 @@ export enum Type {
     Manga = 2,
     FanArt = 3,
     Comment = 4,
-    Reviews = 5
+    Reviews = 5,
 }
 
 export enum RoleType {
@@ -20,7 +20,8 @@ export enum Status {
     Approved = 1,
     NotApproved = 2,
     Continues = 3,
-    Completed = 4
+    Completed = 4,
+    Abandoned = 5
 }
 
 export enum VideoType {
@@ -30,7 +31,10 @@ export enum VideoType {
 
 export enum ComplaintType {
     Video = 1,
-    Image = 2
+    Image = 2,
+    Content = 3,
+    ContentAnime = 4,
+    ContentManga = 5
 }
 
 export enum AnimeStatus {
@@ -67,6 +71,7 @@ export interface Anime extends BaseEntity {
     videoType: VideoType;
     arrangement: string;
     seoUrl: string;
+    fansub: string;
 }
 export interface AnimeEpisodes extends BaseEntity {
     animeID: number;
@@ -78,11 +83,6 @@ export interface AnimeList extends BaseEntity {
     userID: number;
     animeID: number;
     animeStatus: AnimeStatus;
-}
-export interface AnimeOfTheWeek extends BaseEntity {
-    animeID: number;
-    userID: number;
-    description: string;
 }
 export interface Ratings extends BaseEntity {
     userID: number;
@@ -190,6 +190,7 @@ export interface Manga extends BaseEntity {
     seoUrl: string;
     malRating: string;
     siteRating: string;
+    fansub: string;
 }
 
 export interface MangaEpisodeContent extends BaseEntity {
@@ -222,6 +223,8 @@ export interface Review extends BaseEntity {
     animeID: number;
     userID: number;
     message: string;
+    user: Users;
+    type: Type;
 }
 
 export interface Rosette extends BaseEntity {
@@ -289,7 +292,8 @@ export interface UserModel extends Users {
 export interface CategoryType extends BaseEntity {
     categoryID: number,
     contentID: number,
-    type: Type
+    type: Type;
+    categories: Categories;
 }
 export interface RosetteContent extends BaseEntity {
     contentID: number,
@@ -384,4 +388,29 @@ export interface MangaModels {
     likeCount: number;
     viewsCount: number;
     mangaEpisodeCount: number;
+}
+export interface MovieTheWeek extends BaseEntity {
+    contentID: number;
+    userID: number;
+    description: string;
+    type: Type;
+}
+export interface MovieTheWeekModels extends MovieTheWeek {
+    anime: Anime;
+    manga: Manga;
+    users: Users;
+}
+export interface ComplaintContentModels extends ContentComplaint {
+    user: Users;
+    anime: Anime;
+    manga: Manga;
+    animeEpisode: AnimeEpisodes;
+    mangaEpisode: MangaEpisodes;
+}
+export interface ReviewsModels extends Review {
+    anime: Anime;
+    manga: Manga;
+    likes: Like[];
+    comments: Comments[];
+    categories: Categories[];
 }

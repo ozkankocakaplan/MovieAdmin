@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Add, Delete, Edit } from '@mui/icons-material';
-import { alpha, Box, Button, Checkbox, Drawer, Grid, IconButton, TableBody, TableCell, TableRow, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
+import { alpha, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Drawer, Grid, IconButton, TableBody, TableCell, TableRow, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
 import DataTable, { EnhancedTableToolbarProps } from './DataTable';
 import { Order } from './TableHelper';
 import Tabs from '@mui/material/Tabs';
@@ -12,6 +12,10 @@ import DeleteDialog from './DeleteDialog';
 import FullDialog from './FullDialog';
 import Loading from './Loading';
 import { AxiosError } from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { setAnimeEpisodes } from '../store/features/episodeReducers';
+import { setAnimeSeasons } from '../store/features/seasonReducers';
 interface TabPanelProps {
     children?: React.ReactNode;
     index: number;
@@ -23,6 +27,7 @@ interface ISeasonTabsProps {
     addShowDrawer?: (data: number) => void,
     editShowDrawer?: (data: number, seasonID: number) => void,
     deleteShowModal?: () => void,
+    addEpisodeCountModal: () => void
 }
 const SeasonTabs = (props: ISeasonTabsProps) => {
     const [tabsHeader, setTabsHeader] = useState<Array<AnimeSeason>>([]);
@@ -33,7 +38,7 @@ const SeasonTabs = (props: ISeasonTabsProps) => {
     const [selected, setSelected] = React.useState<readonly string[]>([]);
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
-
+    const dispatch = useDispatch();
 
     const [seasonEditDialog, setSeasonEditDialog] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -41,16 +46,22 @@ const SeasonTabs = (props: ISeasonTabsProps) => {
     const [deleteDialog, setDeleteDialog] = useState(false);
     const [deleteSeasonDialog, setDeleteSeasonDialog] = useState(false);
 
-    const [animeEpisodesService, setAnimeEpisodesService] = useState<Array<AnimeEpisodes>>([]);
+    const { animeEpisodes } = useSelector((x: RootState) => x.episodeReducers);
+    const { animeSeasons } = useSelector((x: RootState) => x.seasonReducers);
+
     useEffect(() => {
         setTabsHeader(props.tabsHeader);
         if (props.tabsHeader.length != 0) {
             loadAnimeEpisodesBySeasonID();
         }
     }, [value]);
+    useEffect(() => {
+        setTabsHeader(props.tabsHeader);
+    }, [animeSeasons])
+
     const isSelected = (name: string) => selected.indexOf(name) !== -1;
     const emptyRows =
-        page > 0 ? Math.max(0, (1 + page) * rowsPerPage - animeEpisodesService.length) : 0;
+        page > 0 ? Math.max(0, (1 + page) * rowsPerPage - animeEpisodes.length) : 0;
     const EnhancedTableToolbar = (props: EnhancedTableToolbarProps) => {
         const { numSelected } = props;
         return (
@@ -127,7 +138,7 @@ const SeasonTabs = (props: ISeasonTabsProps) => {
     const loadAnimeEpisodesBySeasonID = async () => {
         await getAnimeEpisodesBySeasonID(props.tabsHeader[value].id)
             .then((res) => {
-                setAnimeEpisodesService(res.data.list);
+                dispatch(setAnimeEpisodes(res.data.list));
             }).catch((er) => {
                 console.log(er);
             });
@@ -136,7 +147,7 @@ const SeasonTabs = (props: ISeasonTabsProps) => {
     const handleDeleteItem = () => {
         setSelected([]);
         var newData = Array<AnimeEpisodes>();
-        newData = animeEpisodesService.filter((item) => {
+        newData = animeEpisodes.filter((item) => {
             var check = selected.some((y) => parseInt(y) === item.id);
             if (check == false) {
                 return item;
@@ -144,7 +155,7 @@ const SeasonTabs = (props: ISeasonTabsProps) => {
         }) as Array<AnimeEpisodes>;
         return newData;
     }
-    const handleDeleteMusicItem = () => {
+    const handleDeleteSeasonItem = () => {
         var newData = Array<AnimeSeason>();
         newData = tabsHeader.filter((item) => {
             if (item.id !== props.tabsHeader[value].id) {
@@ -153,6 +164,8 @@ const SeasonTabs = (props: ISeasonTabsProps) => {
         }) as Array<AnimeSeason>;
         return newData;
     }
+
+
     return (
         <Loading loading={loading}>
             {tabsHeader != null && props.tabsHeader.length != 0 && <Grid item sm={12} xs={12} md={12}>
@@ -171,14 +184,17 @@ const SeasonTabs = (props: ISeasonTabsProps) => {
                 {
                     tabsHeader.map((item, index) => {
                         return <TabPanel key={index} value={value} index={index}>
-                            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                            <Box sx={{ flex: 1, display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+                                <Button onClick={() => props.addEpisodeCountModal()} variant='contained' sx={{ marginLeft: '15px' }}>
+                                    Otomatik Bölüm Ekle
+                                </Button>
                                 <Button onClick={() => setSeasonEditDialog(true)} variant='contained'>
                                     {item.seasonName} düzenle
                                 </Button>
                             </Box>
                             <DataTable
                                 EnhancedTableToolbar={EnhancedTableToolbar}
-                                rows={animeEpisodesService.map((item) => item.id.toString())}
+                                rows={animeEpisodes.map((item) => item.id.toString())}
                                 HeadCell={animeEpisodesCells}
                                 order={order}
                                 setOrder={(data) => setOrder(data)}
@@ -204,9 +220,9 @@ const SeasonTabs = (props: ISeasonTabsProps) => {
                                     setDeleteDialog(true);
                                 }}
                                 tableName="Bölümler"
-                                tableBody={!loading && animeEpisodesService.length != 0 &&
+                                tableBody={!loading && animeEpisodes.length != 0 &&
                                     <TableBody>
-                                        {animeEpisodesService
+                                        {animeEpisodes
                                             .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                             .map((row, index) => {
                                                 const isItemSelected = isSelected(row.id.toString());
@@ -272,7 +288,7 @@ const SeasonTabs = (props: ISeasonTabsProps) => {
                     yesButon={
                         <Button onClick={async () => {
                             await deleteAnimeEpisode(selected.map((item) => parseInt(item))).then((res) => {
-                                setAnimeEpisodesService(handleDeleteItem());
+                                dispatch(setAnimeEpisodes(handleDeleteItem()));
                             }).catch((er) => {
 
                             });
@@ -311,9 +327,11 @@ const SeasonTabs = (props: ISeasonTabsProps) => {
                         dialogContentText={"Bu işlem geri alınamaz"}
                         yesButon={
                             <Button onClick={async () => {
-                                setTabsHeader(handleDeleteMusicItem());
+                                setValue(0);
+                                dispatch(setAnimeSeasons(handleDeleteSeasonItem()));
                                 await deleteAnimeSeason(props.tabsHeader[value].id).then((res) => {
-                                    setTabsHeader(handleDeleteMusicItem());
+                                    setTabsHeader(handleDeleteSeasonItem());
+                                    dispatch(setAnimeSeasons(handleDeleteSeasonItem()))
                                 })
                                     .catch((er) => {
 
@@ -334,6 +352,7 @@ const SeasonTabs = (props: ISeasonTabsProps) => {
 
             </Grid>}
         </Loading>
+
     );
 }
 export default SeasonTabs;
@@ -370,7 +389,7 @@ const EditSeason = (props: { id: number, handleCloseDialog: () => void, handleUp
     const [orderBy, setOrderBy] = React.useState<keyof AnimeSeason>('seasonName');
     const [selected, setSelected] = React.useState<readonly string[]>([]);
     const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(5);
+    const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
     const [animeSeasonService, setAnimeSeasonService] = useState<Array<AnimeSeasonMusic>>([]);
 
@@ -717,7 +736,7 @@ const AddAnimeSeasonMusicRightDrawer = (props: { drawerState: boolean, handleClo
                             <TextField
                                 value={seasonMusicForm.musicUrl}
                                 onChange={(e) => setSeasonMusicForm({ ...seasonMusicForm, musicUrl: e.target.value })}
-                                label="Müzik Url"
+                                label="Embed Linki"
                                 fullWidth
                             ></TextField>
                         </Box>

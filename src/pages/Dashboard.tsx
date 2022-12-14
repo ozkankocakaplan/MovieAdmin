@@ -5,7 +5,7 @@ import Loading from '../components/Loading';
 import { ReportModels } from '../types/Entites';
 import { getDashboardReport } from '../utils/api';
 import Anime from './Anime';
-import Manga from './Manga';
+
 
 
 
@@ -22,7 +22,6 @@ export default function Dashboard() {
     const loadDashboardReport = async () => {
         await getDashboardReport()
             .then((res) => {
-                console.log(res.data);
                 setDashboardReport(res.data.entity);
             }).catch((er) => {
                 console.log(er)

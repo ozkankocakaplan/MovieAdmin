@@ -55,7 +55,8 @@ interface IDataTableProps<T> {
     goEditPage: () => void,
     goAddPage: () => void,
     handleDelete: () => void,
-    EnhancedTableToolbar: any
+    EnhancedTableToolbar: any,
+    extraData?: any
 }
 const EnhancedTableHead = <T extends object>(props: EnhancedTableProps<T>) => {
     const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } =
@@ -142,6 +143,7 @@ const DataTable = <T extends object>(props: IDataTableProps<T>) => {
                 goEditPage={props.goEditPage}
                 handleDelete={props.handleDelete}
                 numSelected={props.selected.length} />
+            {props.extraData}
             <TableContainer>
                 <Table
                     sx={{ minWidth: 750 }}

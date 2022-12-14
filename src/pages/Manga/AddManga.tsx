@@ -5,6 +5,12 @@ import { useNavigate } from 'react-router';
 import Loading from '../../components/Loading';
 import { Anime, AnimeModels, Categories, CategoryType, Manga, Status, Type } from '../../types/Entites';
 import { getAnimes, getCategories, postCategoryType, postManga } from '../../utils/api';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+
+const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
+
 
 interface SelectedAnime extends AnimeModels {
     firstLetter: string
@@ -12,10 +18,11 @@ interface SelectedAnime extends AnimeModels {
 export default function AddManga() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-
+    const [selectedCategories, setSelectedCategories] = useState<Array<Categories>>([]);
     const [categoriesService, setCategoriesService] = useState<Array<Categories>>([]);
-    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-    const [selectedCategoriesID, setSelectedCategoriesID] = useState<number[]>([]);
+    // const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+    // const [selectedCategoriesID, setSelectedCategoriesID] = useState<number[]>([]);
 
 
 
@@ -23,7 +30,7 @@ export default function AddManga() {
 
     const [animeListService, setAnimeList] = useState<Array<AnimeModels>>([]);
 
-    const [mangaForm, setMangaForm] = useState<Manga>({ animeID: 0, name: '', description: '', arrangement: '', ageLimit: '', status: Status.Continues, siteRating: '', malRating: '' } as Manga);
+    const [mangaForm, setMangaForm] = useState<Manga>({ animeID: 0, name: '', description: '', arrangement: '', ageLimit: '', status: Status.Continues, fansub: '', malRating: '' } as Manga);
     const [mangaStatus, setMangaStatus] = useState(Status.Continues);
 
     useEffect(() => {
@@ -39,26 +46,13 @@ export default function AddManga() {
             });
         setLoading(false);
     }
-    const handleChange = (event: SelectChangeEvent<typeof selectedCategories>) => {
-        const { target: { value }, } = event;
-        setSelectedCategories(typeof value === 'string' ? value.split(',') : value);
-    };
-    const handleSelectedCategoriesID = (id: number) => {
-        var check = selectedCategoriesID.find((i) => i === id);
-        if (check != undefined) {
-            setSelectedCategoriesID(selectedCategoriesID.filter((y) => y !== id));
-        }
-        else {
-            setSelectedCategoriesID([...selectedCategoriesID, id]);
-        }
-    }
     const saveButon = async () => {
         await postManga({ ...mangaForm, animeID: selectedAnime != null ? selectedAnime.anime.id : 0 })
             .then(async (res) => {
                 if (res.data.isSuccessful) {
                     var categoryTypeArray = new Array<CategoryType>();
-                    selectedCategoriesID.map((item: number) => {
-                        categoryTypeArray.push({ contentID: res.data.entity.id, type: Type.Manga, categoryID: item } as CategoryType);
+                    selectedCategories.map((item: any) => {
+                        categoryTypeArray.push({ contentID: res.data.entity.id, type: Type.Manga, categoryID: item.id } as CategoryType);
                     })
                     await postCategoryType(categoryTypeArray).then((response) => {
                         navigate("/anime/" + res.data.entity.id);
@@ -91,6 +85,10 @@ export default function AddManga() {
     const defaultAnimeProps = {
         options: animeListService,
         getOptionLabel: (option: AnimeModels) => option.anime.animeName,
+    };
+    const defaultCategoryProps = {
+        options: categoriesService,
+        getOptionLabel: (option: Categories) => option.name,
     };
     return (
         <Loading loading={loading}>
@@ -165,31 +163,36 @@ export default function AddManga() {
                                     maxWidth: '100%',
                                 }}>
                                     <FormControl sx={{ minWidth: 'calc(100%)', maxWidth: 300 }}>
-                                        <InputLabel id="demo-multiple-checkbox-label">Kategoriler</InputLabel>
-                                        <Select
-                                            labelId="demo-multiple-checkbox-label"
-                                            id="demo-multiple-checkbox"
+                                        <Autocomplete
+                                            {...defaultCategoryProps}
                                             multiple
+                                            id="checkboxes-tags-demo"
+                                            disableCloseOnSelect
                                             value={selectedCategories}
-                                            onChange={handleChange}
-                                            input={<OutlinedInput label="Kategoriler" />}
-                                            renderValue={(selected) => selected.join(', ')}
-                                            MenuProps={MenuProps}
-                                        >
-                                            {
-                                                categoriesService != null && categoriesService.length != 0 &&
-                                                categoriesService.map((item, index) => {
-                                                    return <MenuItem onClick={() => handleSelectedCategoriesID(item.id != null ? item.id : 0)} key={item.id} value={item.name}>
-                                                        <Checkbox checked={selectedCategories.indexOf(item.name) > -1} />
-                                                        <ListItemText primary={item.name} />
-                                                    </MenuItem>
-                                                })
-                                            }
-                                        </Select>
+                                            onChange={(event, newValue) => {
+                                                setSelectedCategories(newValue as Array<Categories>);
+                                            }}
+                                            isOptionEqualToValue={(option, value) => option.id === value.id}
+                                            renderOption={(props, option, { selected }) => (
+                                                <li {...props}>
+                                                    <Checkbox
+                                                        icon={icon}
+                                                        checkedIcon={checkedIcon}
+                                                        style={{ marginRight: 8 }}
+                                                        checked={selected}
+                                                    />
+                                                    {option.name}
+                                                </li>
+                                            )}
+                                            fullWidth
+                                            renderInput={(params) => (
+                                                <TextField {...params} label="Kategoriler" placeholder="Kategori" />
+                                            )}
+                                        />
                                     </FormControl>
                                 </Box>
                                 <Box sx={{
-                                    marginTop: '10px',
+                                    marginTop: '10px', marginBottom: '10px',
                                     maxWidth: '100%',
                                 }}>
                                     <FormControl fullWidth>
@@ -205,35 +208,43 @@ export default function AddManga() {
                                             }}
                                         >
                                             <MenuItem value={Status.Continues}>Devam Ediyor</MenuItem>
+                                            <MenuItem value={Status.Abandoned}>Yarıda Bırakıldı</MenuItem>
                                             <MenuItem value={Status.Completed}>Tamamlandı</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Box>
+                                <FormControl fullWidth>
+                                    <InputLabel id="demo-simple-select-label">Yaş Sınırı</InputLabel>
+                                    <Select
+                                        labelId="demo-simple-select-label"
+                                        id="demo-simple-select"
+                                        value={mangaForm.ageLimit.replace(' ', '')}
+                                        label="Yaş Sınırı"
+                                        onChange={(e) => {
+
+                                            setMangaForm({ ...mangaForm, ageLimit: e.target.value })
+                                        }}
+                                    >
+                                        <MenuItem value={"7"}>+7</MenuItem>
+                                        <MenuItem value={"13"}>+13</MenuItem>
+                                        <MenuItem value={"18"}>+18</MenuItem>
+                                    </Select>
+                                </FormControl>
                                 <Grid item sm={12} md={12} xs={12} >
                                     <TextField
-                                        value={mangaForm.ageLimit}
-                                        onChange={(e) => setMangaForm({ ...mangaForm, ageLimit: e.target.value })}
-                                        label="Yaş Sınırı"
+                                        value={mangaForm.malRating}
+                                        onChange={(e) => setMangaForm({ ...mangaForm, malRating: e.target.value })}
+                                        label="Mal Rating"
                                         fullWidth
                                     ></TextField>
                                 </Grid>
-                                <Grid container spacing={2} sx={{ '& .MuiGrid-item': { paddingTop: 0 } }}>
-                                    <Grid item sm={6} md={6} xs={12}>
-                                        <TextField
-                                            value={mangaForm.siteRating}
-                                            onChange={(e) => setMangaForm({ ...mangaForm, siteRating: e.target.value })}
-                                            label="Site Rating"
-                                            fullWidth
-                                        ></TextField>
-                                    </Grid>
-                                    <Grid item sm={6} md={6} xs={12}>
-                                        <TextField
-                                            value={mangaForm.malRating}
-                                            onChange={(e) => setMangaForm({ ...mangaForm, malRating: e.target.value })}
-                                            label="Mal Rating"
-                                            fullWidth
-                                        ></TextField>
-                                    </Grid>
+                                <Grid item sm={12} md={12} xs={12} >
+                                    <TextField
+                                        value={mangaForm.fansub}
+                                        onChange={(e) => setMangaForm({ ...mangaForm, fansub: e.target.value })}
+                                        label="Fansub"
+                                        fullWidth
+                                    ></TextField>
                                 </Grid>
                             </div>
                         </Paper>

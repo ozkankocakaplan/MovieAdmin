@@ -6,10 +6,10 @@ import { alpha, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogCo
 import DataTable, { EnhancedTableToolbarProps } from '../components/DataTable';
 import Loading from '../components/Loading'
 import { getComparator, Order, stableSort } from '../components/TableHelper';
-import { ComplaintList, ComplaintListModels, ContentComplaint, Notification, NotificationType } from '../types/Entites';
+import { ComplaintContentModels, ComplaintListModels, ContentComplaint, Notification, NotificationType } from '../types/Entites';
 import { complaintCells, contentComplaintCells } from '../utils/HeadCells';
 import { Box } from '@mui/system';
-import { addNotification, deleteComplaints, getComplaints } from '../utils/api';
+import { addNotification, deleteComplaints, getComplaints, getContentComplaint } from '../utils/api';
 import DeleteDialog from '../components/DeleteDialog';
 
 export default function Complaint() {
@@ -18,9 +18,25 @@ export default function Complaint() {
     const [selected, setSelected] = React.useState<readonly string[]>([]);
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
-    const [serviceResponse, setServiceResponse] = useState<Array<ContentComplaint>>([]);
+    const [serviceResponse, setServiceResponse] = useState<Array<ComplaintContentModels>>([]);
     const [loading, setLoading] = useState(false);
 
+    const [viewDialog, setViewDialog] = useState(false);
+    const [description, setDescription] = useState('');
+    const [selectedComplaint, setSelectedComplaint] = useState<ComplaintContentModels>({} as ComplaintContentModels);
+    useEffect(() => {
+        loadContentComplaint();
+        return () => {
+            setServiceResponse([]);
+        }
+    }, [])
+    const loadContentComplaint = async () => {
+        await getContentComplaint().then((res) => {
+            setServiceResponse(res.data.list)
+        }).then((res) => {
+
+        })
+    }
     const handleClick = (event: React.MouseEvent<unknown>, name: string) => {
         const selectedIndex = selected.indexOf(name);
         let newSelected: readonly string[] = [];
@@ -78,7 +94,7 @@ export default function Complaint() {
                     <>
                         {numSelected == 1 && <Tooltip title="Düzenle">
                             <IconButton onClick={props.goEditPage}>
-                                <Edit />
+                                <Visibility />
                             </IconButton>
                         </Tooltip>}
                         <Tooltip title="Sil">
@@ -112,7 +128,9 @@ export default function Complaint() {
                             setRowsPerPage={(data) => setRowsPerPage(data)}
                             goAddPage={() => { }}
                             goEditPage={() => {
-
+                                var entity = serviceResponse.find((y) => y.id === parseInt(selected[0]));
+                                setSelectedComplaint(entity as ComplaintContentModels);
+                                setViewDialog(true);
                             }}
                             handleDelete={() => { }}
                             tableName="İçerik Şikayetleri"
@@ -142,23 +160,68 @@ export default function Complaint() {
                                                             }}
                                                         />
                                                     </TableCell>
+                                                    <TableCell>{row.user.nameSurname}</TableCell>
+                                                    <TableCell>{row.user.email}</TableCell>
+                                                    <TableCell>{row.message}</TableCell>
+                                                    {
+                                                        row.anime !== null ?
+                                                            <TableCell>
+                                                                {row.anime.animeName}  <br />
+                                                                {row.animeEpisode !== null && row.animeEpisode.episodeName}
+                                                            </TableCell>
+                                                            :
+                                                            row.manga !== null &&
+                                                            <TableCell>
+                                                                {row.manga.name} <br />
+                                                                {row.mangaEpisode !== null && row.mangaEpisode.name}
+                                                            </TableCell>
+                                                    }
+                                                    <TableCell>
+                                                        {new Date(row.createTime).toLocaleDateString()}
+                                                    </TableCell>
                                                 </TableRow>
                                             );
                                         })}
-                                    {emptyRows > 0 && (
-                                        <TableRow
-                                            style={{
-                                                height: 53 * emptyRows,
-                                            }}
-                                        >
-                                            <TableCell colSpan={6} />
-                                        </TableRow>
-                                    )}
                                 </TableBody>
                             }
                         />
                     </Paper>
                 </Grid>
+                <Dialog fullWidth open={viewDialog} onClose={() => setViewDialog(false)}>
+                    <DialogTitle>Uyarı Mesajı</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            autoFocus
+                            multiline={true}
+                            rows={4}
+                            margin="dense"
+                            id="name"
+                            label="Açıklama"
+                            type="text"
+                            fullWidth
+                            variant="standard"
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setViewDialog(false)}>İptal</Button>
+                        <Button onClick={async () => {
+                            var entity = {
+                                notificationMessage: description,
+                                userID: selectedComplaint.userID,
+                                notificationType: NotificationType.UserWarning,
+                                isReadInfo: false
+                            } as Notification;
+                            await addNotification(entity).then((res) => {
+                                console.log(res.data)
+                            }).catch((er) => {
+                                console.log(er)
+                            });
+                            setViewDialog(false);
+                        }}>Gönder</Button>
+                    </DialogActions>
+                </Dialog>
                 <UserComplaintList />
             </Box>
         </Loading>
@@ -372,6 +435,7 @@ const UserComplaintList = () => {
                         }).catch((er) => {
                             console.log(er)
                         });
+                        setViewDialog(false);
                     }}>Gönder</Button>
                 </DialogActions>
             </Dialog>

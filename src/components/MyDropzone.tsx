@@ -1,7 +1,10 @@
+import React, { useEffect, useMemo, useState } from 'react'
 import { Delete } from '@mui/icons-material';
 import { Button, IconButton } from '@mui/material';
-import React, { useEffect, useMemo, useState } from 'react'
 import { useDropzone } from 'react-dropzone';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { deleteAnimeFile, deleteUploadImage, setAnimeFiles, setUploadImages } from '../store/features/mainReducers';
 import { AnimeImages, MangaImages } from '../types/Entites';
 import { baseUrl, deleteAnimeImage, deleteMangaImage, postAnimeImages, postMangaImages } from '../utils/api';
 const baseStyle = {
@@ -12,9 +15,9 @@ const baseStyle = {
     padding: '20px',
     borderWidth: 2,
     borderRadius: 2,
-    borderColor: '#eeeeee',
+    borderColor: '#141414',
     borderStyle: 'dashed',
-    backgroundColor: '#fafafa',
+    backgroundColor: '#141414',
     color: '#bdbdbd',
     outline: 'none',
     justifyContent: 'center'
@@ -54,8 +57,8 @@ const img = {
     height: '100%'
 };
 export default function MyDropzone(props: { animeID?: number, mangaID?: number, data?: Array<AnimeImages | MangaImages> }) {
-    const [files, setFiles] = useState([]);
-    const [imageList, setImageList] = useState<Array<AnimeImages | MangaImages>>(props.data as any);
+    const { animeFiles, uploadImages } = useSelector((x: RootState) => x.mainReducers);
+    const dispatch = useDispatch();
     const {
         getRootProps,
         getInputProps,
@@ -66,17 +69,18 @@ export default function MyDropzone(props: { animeID?: number, mangaID?: number, 
         accept: { 'image/*': [] },
         onDrop: acceptedFiles => {
             var key = 1;
-            setFiles(acceptedFiles.map(file => Object.assign(file, {
+            dispatch(setAnimeFiles(acceptedFiles.map(file => Object.assign(file, {
                 key: key++,
                 preview: URL.createObjectURL(file)
-            })) as []);
+            }))) as any);
         }
     });
     useEffect(() => {
-        return () => files.forEach((file: any) => URL.revokeObjectURL(file.preview));
+        dispatch(setUploadImages(props.data))
+        return () => animeFiles.forEach((file: any) => URL.revokeObjectURL(file.preview));
     }, []);
 
-    const thumbs = files.map((file: any) => (
+    const thumbs = animeFiles.map((file: any) => (
         <div style={thumb} key={file.name}>
             <div style={thumbInner}>
                 <img
@@ -88,7 +92,7 @@ export default function MyDropzone(props: { animeID?: number, mangaID?: number, 
             </div>
             <IconButton
                 onClick={() => {
-                    setFiles(files.filter((y: any) => y.key !== file.key))
+                    dispatch(deleteAnimeFile(file.key));
                 }}
                 sx={{
                     position: 'absolute',
@@ -113,14 +117,14 @@ export default function MyDropzone(props: { animeID?: number, mangaID?: number, 
     ]);
 
     return (
-        <div className="container">
+        <div style={{ marginBottom: '30px' }} className="container">
             <div>
                 <h3>Yüklü Görseller</h3>
                 <aside style={{ display: 'flex', flex: 'row', flexWrap: 'wrap', marginTop: '16px', maxHeight: '200px' }}>
                     {
                         props.animeID ?
-                            imageList &&
-                            imageList.map((item) => {
+                            uploadImages &&
+                            uploadImages.map((item: any) => {
                                 var entity = item as AnimeImages;
                                 return <div style={thumb} key={entity.id}>
                                     <div style={thumbInner}>
@@ -133,7 +137,8 @@ export default function MyDropzone(props: { animeID?: number, mangaID?: number, 
                                     <IconButton
                                         onClick={async () => {
                                             await deleteAnimeImage(item.id);
-                                            setImageList(imageList.filter((y) => y.id !== item.id));
+                                            dispatch(deleteUploadImage(item.id))
+
                                         }}
                                         sx={{
                                             position: 'absolute',
@@ -144,8 +149,8 @@ export default function MyDropzone(props: { animeID?: number, mangaID?: number, 
                                     </IconButton>
                                 </div>
                             }) :
-                            imageList &&
-                            imageList.map((item) => {
+                            uploadImages &&
+                            uploadImages.map((item: any) => {
                                 var entity = item as MangaImages;
                                 return <div style={thumb} key={entity.id}>
                                     <div style={thumbInner}>
@@ -158,7 +163,7 @@ export default function MyDropzone(props: { animeID?: number, mangaID?: number, 
                                     <IconButton
                                         onClick={async () => {
                                             await deleteMangaImage(item.id);
-                                            setImageList(imageList.filter((y) => y.id !== item.id));
+                                            dispatch(deleteUploadImage(item.id));
                                         }}
                                         sx={{
                                             position: 'absolute',
@@ -181,10 +186,10 @@ export default function MyDropzone(props: { animeID?: number, mangaID?: number, 
                 <aside style={{ display: 'flex', flex: 'row', flexWrap: 'wrap', marginTop: '16px' }}>
                     {thumbs}
                 </aside>
-                {files.length !== 0 && <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                {/* {animeFiles.length !== 0 && <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <Button onClick={async () => {
                         var formData = new FormData();
-                        files.map((item) => {
+                        animeFiles.map((item) => {
                             formData.append("files", item as any);
                         })
                         if (props.animeID != undefined) {
@@ -198,7 +203,7 @@ export default function MyDropzone(props: { animeID?: number, mangaID?: number, 
                     }} variant='contained'>
                         Yükle
                     </Button>
-                </div>}
+                </div>} */}
             </div>
         </div>
     );

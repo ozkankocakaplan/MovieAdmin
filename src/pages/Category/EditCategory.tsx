@@ -40,18 +40,19 @@ export default function EditCategory() {
             setFormCheck(false);
             await putCategory(category).then((res) => {
                 if (res.data.isSuccessful) {
-                    setResult({ status: true, text: "Değişiklikler Kaydedildi." })
+                    setResult({ status: true, text: "Değişiklikler Kaydedildi." });
+                    setTimeout(() => {
+                        navigate("/categories");
+                    }, 700);
                 }
                 else {
-                    setResult({ status: false, text: res.data.exceptionMessage.toString() })
+                    setResult({ status: false, text: "Kategori mevcut" })
                 }
             }).catch((er: AxiosError) => {
                 setResult({ status: false, text: er.message })
             });
             setOpen(true);
-            setTimeout(() => {
-                navigate("/categories");
-            }, 700);
+
         }
         else {
             setFormCheck(true)

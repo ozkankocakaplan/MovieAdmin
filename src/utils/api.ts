@@ -3,18 +3,20 @@
 import axios from "axios"
 import {
     Anime, AnimeEpisodes, AnimeImages, AnimeModels, AnimeSeason, AnimeSeasonMusic, Announcement, Categories, CategoryType,
+    ComplaintContentModels,
     ComplaintList,
     ComplaintListModels,
     Contact,
     ContactSubject,
-    Episodes, FanArt, FanArtModels, HomeSlider, Manga, MangaEpisodeContent, MangaEpisodes, MangaImages, MangaModels, Notification, ReportModels, RoleType, Rosette, RosetteContent,
+    Episodes, FanArt, FanArtModels, HomeSlider, Manga, MangaEpisodeContent, MangaEpisodes, MangaImages, MangaModels, MovieTheWeek, MovieTheWeekModels, Notification, ReportModels, Review, ReviewsModels, RoleType, Rosette, RosetteContent,
     RosetteModels,
     SiteDescription,
     SocialMediaAccount, Type, UserModel, Users
 } from "../types/Entites";
 import { AnimeForm } from "../types/EntitesForm";
 import ServiceResponse from "../types/ServiceResponse";
-export const baseUrl = "http://192.168.2.175:37323";
+// export const baseUrl = "https://api.lycorisa.com";
+export const baseUrl = "http://192.168.1.107:37323";
 export default function api() {
     const userLocal = localStorage.getItem('user');
     var user: UserModel = {} as UserModel;
@@ -68,7 +70,7 @@ export const getPaginatedAnime = async (pageNo: number, showCount: number) => {
 }
 export const postAnime = async (anime: AnimeForm) => {
     var form = new FormData();
-    return await api().post<ServiceResponse<Anime>>("/addAnime?AnimeName=" + anime.animeName + "&AnimeDescription=" + anime.animeDescription + "&MalRating=" + anime.malRating + "&AgeLimit=" + anime.ageLimit + "&SeasonCount=" + anime.seasonCount + "&ShowTime=" + anime.showTime + "&Status=" + anime.status + "&VideoType=" + anime.videoType + "&SiteRating=" + anime.siteRating,
+    return await api().post<ServiceResponse<Anime>>("/addAnime?AnimeName=" + anime.animeName + "&AnimeDescription=" + anime.animeDescription + "&MalRating=" + anime.malRating + "&AgeLimit=" + anime.ageLimit + "&SeasonCount=" + anime.seasonCount + "&ShowTime=" + anime.showTime + "&Status=" + anime.status + "&VideoType=" + anime.videoType + "&Img=" + anime.img + "&fansub=" + anime.fansub,
         form,
         {
             headers: {
@@ -78,7 +80,7 @@ export const postAnime = async (anime: AnimeForm) => {
 }
 export const putAnime = async (anime: Anime) => {
     var form = new FormData();
-    return await api().put<ServiceResponse<Anime>>("/updateAnime?ID=" + anime.id + "&AnimeName=" + anime.animeName + "&AnimeDescription=" + anime.animeDescription + "&MalRating=" + anime.malRating + "&AgeLimit=" + anime.ageLimit + "&SeasonCount=" + anime.seasonCount + "&ShowTime=" + anime.showTime + "&Status=" + anime.status + "&VideoType=" + anime.videoType + "&SiteRating=" + anime.siteRating,
+    return await api().put<ServiceResponse<Anime>>("/updateAnime?ID=" + anime.id + "&AnimeName=" + anime.animeName + "&AnimeDescription=" + anime.animeDescription + "&MalRating=" + anime.malRating + "&AgeLimit=" + anime.ageLimit + "&SeasonCount=" + anime.seasonCount + "&ShowTime=" + anime.showTime + "&Status=" + anime.status + "&VideoType=" + anime.videoType + "&Img=" + anime.img + "&fansub=" + anime.fansub,
         form,
         {
             headers: {
@@ -98,7 +100,7 @@ export const deleteAnimes = async (animes: Array<number>) => {
     });
 }
 export const getAnimes = async () => {
-    return await api().get<ServiceResponse<AnimeModels>>("/getAnimes");
+    return await api().get<ServiceResponse<AnimeModels>>("/getAdminAnimes");
 }
 export const getSearchAnimes = async (text: string) => {
     return await api().get<ServiceResponse<Anime>>("/getSearchAnime/" + text);
@@ -108,7 +110,7 @@ export const putAnimeImage = async (formData: FormData, id: number) => {
 }
 // Anime Images
 export const postAnimeImages = async (formData: FormData, id: number) => {
-    return await api().post("/addAnimeImage/" + id, formData, {
+    return await api().post<ServiceResponse<AnimeImages>>("/addAnimeImage/" + id, formData, {
         headers: {
             'content-type': 'multipart/form-data'
         }
@@ -290,12 +292,10 @@ export const putCategoryType = async (categoryType: Array<CategoryType>) => {
 }
 //Manga
 export const postManga = async (manga: Manga) => {
-    var form = new FormData();
-    return await api().post<ServiceResponse<Manga>>("/addManga?AnimeID=" + manga.animeID + "&Name=" + manga.name + "&Description=" + manga.description + "&SiteRating=" + manga.siteRating + "&AgeLimit=" + manga.ageLimit + "&Status=" + manga.status + "&MalRating=" + manga.malRating, form, { headers: { 'content-type': 'multipart/form-data' } });
+    return await api().post<ServiceResponse<Manga>>("/addManga?AnimeID=" + manga.animeID + "&Name=" + manga.name + "&Description=" + manga.description + "&SiteRating=" + manga.siteRating + "&AgeLimit=" + manga.ageLimit + "&Status=" + manga.status + "&MalRating=" + manga.malRating + "&Image=" + manga.image + "&fansub=" + manga.fansub, { headers: { 'content-type': 'multipart/form-data' } });
 }
 export const putManga = async (manga: Manga) => {
-    var form = new FormData();
-    return await api().put<ServiceResponse<Manga>>("/updateManga?AnimeID=" + manga.animeID + "&ID=" + manga.id + "&Name=" + manga.name + "&Description=" + manga.description + "&SiteRating=" + manga.siteRating + "&AgeLimit=" + manga.ageLimit + "&Status=" + manga.status + "&MalRating=" + manga.malRating, form, { headers: { 'content-type': 'multipart/form-data' } });
+    return await api().put<ServiceResponse<Manga>>("/updateManga?AnimeID=" + manga.animeID + "&ID=" + manga.id + "&Name=" + manga.name + "&Description=" + manga.description + "&SiteRating=" + manga.siteRating + "&AgeLimit=" + manga.ageLimit + "&Status=" + manga.status + "&MalRating=" + manga.malRating + "&Image=" + manga.image + "&fansub=" + manga.fansub, { headers: { 'content-type': 'multipart/form-data' } });
 }
 export const getPaginatedManga = async (pageNo: number, showCount: number) => {
     return await api().get<ServiceResponse<Manga>>("/getPaginatedManga/" + pageNo + "/" + showCount);
@@ -312,7 +312,7 @@ export const deleteMangas = async (mangas: Array<number>) => {
     });
 }
 export const getMangas = async () => {
-    return await api().get<ServiceResponse<MangaModels>>("/getMangas");
+    return await api().get<ServiceResponse<MangaModels>>("/getAdminMangas");
 }
 export const getSearchDetailsMangas = async (text: string) => {
     return await api().get<ServiceResponse<Manga>>("/getSearchDetailsMangas/" + text);
@@ -354,9 +354,7 @@ export const deleteMangaEpisodes = async (episodes: Array<number>) => {
 }
 //Manga Episode Content
 export const postMangaContentEpisode = async (episodeContent: MangaEpisodeContent) => {
-    var form = new FormData();
-    return await api().post<ServiceResponse<MangaEpisodeContent>>("/addMangaEpisodeContent?EpisodeID=" + episodeContent.episodeID + "&Description=" + episodeContent.description + "&ContentOrder=" + episodeContent.contentOrder,
-        form,
+    return await api().post<ServiceResponse<MangaEpisodeContent>>("/addMangaEpisodeContent?EpisodeID=" + episodeContent.episodeID + "&Description=" + episodeContent.description + "&ContentOrder=" + episodeContent.contentOrder + "&ContentImage=" + episodeContent.contentImage,
         {
             headers: {
                 'content-type': 'application/json'
@@ -364,9 +362,7 @@ export const postMangaContentEpisode = async (episodeContent: MangaEpisodeConten
         });
 }
 export const putMangaContentEpisode = async (episodeContent: MangaEpisodeContent) => {
-    var form = new FormData();
-    return await api().put<ServiceResponse<MangaEpisodeContent>>("/updateMangaEpisodeContent?ID=" + episodeContent.id + "&EpisodeID=" + episodeContent.episodeID + "&Description=" + episodeContent.description + "&ContentOrder=" + episodeContent.contentOrder,
-        form,
+    return await api().put<ServiceResponse<MangaEpisodeContent>>("/updateMangaEpisodeContent?ID=" + episodeContent.id + "&EpisodeID=" + episodeContent.episodeID + "&Description=" + episodeContent.description + "&ContentOrder=" + episodeContent.contentOrder + "&ContentImage=" + episodeContent.contentImage,
         {
             headers: {
                 'content-type': 'application/json'
@@ -500,7 +496,7 @@ export const putSiteDescription = async (entity: SiteDescription) => {
 
 //Fan art
 export const postFanArt = async (entity: FanArt, formData: FormData) => {
-    return await api().post("/addFanArt?UserID=" + entity.userID + "&ContentID=" + entity.contentID + "&Description=" + entity.description + "&Type=" + entity.type, formData, {
+    return await api().post("/addFanArt?UserID=" + entity.userID + "&ContentID=" + entity.contentID + "&Description=" + entity.description + "&Type=" + entity.type + "&Image=" + entity.image, formData, {
         headers: {
             'content-type': 'multiform/form-data'
         }
@@ -526,4 +522,39 @@ export const deleteComplaints = async (list: Array<number>) => {
 //Notification 
 export const addNotification = async (entity: Notification) => {
     return await api().post<ServiceResponse<Notification>>("/addNotification", entity);
+}
+
+export const getMovieTheWeeks = async () => {
+    return await api().get<ServiceResponse<MovieTheWeekModels>>("/getMovieTheWeeks");
+}
+export const addMovieTheWeeks = async (lists: Array<MovieTheWeek>) => {
+    return await api().post<ServiceResponse<MovieTheWeekModels>>("/addMovieTheWeek", lists);
+}
+export const deleteMovieTheWeeks = async (lists: Array<Number>) => {
+    return await api().delete("/deleteMovieTheWeek", {
+        data: lists
+    });
+}
+export const getContentComplaint = async () => {
+    return await api().get<ServiceResponse<ComplaintContentModels>>("/getContentComplaint");
+}
+export const addAutoEpisode = async (start: number, end: number, animeID: number, seasonID: number) => {
+    return await api().post<ServiceResponse<AnimeEpisodes>>(`/addAutoEpisodes/${start}/${end}/${animeID}/${seasonID}`)
+}
+export const getPaginatedReviewsNoType = async (pageNo: number, showCount: number) => {
+    return await api().get<ServiceResponse<ReviewsModels>>("/getPaginatedReviewsNoType/" + pageNo + "/" + showCount)
+}
+export const deleteReview = async (id: number) => {
+    return await api().delete<ServiceResponse<Review>>(`/deleteAdminReview/${id}`)
+}
+export const addAutoMangaEpisodes = async (start: number, end: number, mangaID: number) => {
+    return await api().post<ServiceResponse<AnimeEpisodes>>(`/addAutoMangaEpisodes/${start}/${end}/${mangaID}`)
+}
+export const addAutoMangaEpisodeContents = async (start: number, end: number, episodeID: number) => {
+    return await api().post<ServiceResponse<AnimeEpisodes>>(`/addAutoMangaEpisodeContents/${start}/${end}/${episodeID}`)
+}
+export const deleteMangaEpisodeContents = async (episodes: Array<number>) => {
+    return await api().delete("/deleteMangaEpisodeContents", {
+        data: episodes
+    });
 }
